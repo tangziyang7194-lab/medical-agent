@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y \
     make \
     default-libmysqlclient-dev \
     pkg-config \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # 复制依赖文件
@@ -36,15 +37,12 @@ RUN mkdir -p .vector_db \
     static/js \
     logs
 
-# 设置权限
-RUN chmod +x start_quick.sh 2>/dev/null || true
-
-# 暴露端口
-EXPOSE 5000
+# 暴露端口（Hugging Face Spaces 固定使用 7860 端口）
+EXPOSE 7860
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:5000/api/user/status || exit 1
+    CMD curl -f http://localhost:7860/api/user/status || exit 1
 
-# 启动命令
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "--threads", "4", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-", "app:app"]
+# 启动命令（监听 7860 端口，适配 Hugging Face Spaces）
+CMD ["gunicorn", "--bind", "0.0.0.0:7860", "--workers", "1", "--threads", "4", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-", "app:app"]

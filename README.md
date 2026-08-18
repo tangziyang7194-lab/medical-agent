@@ -1,3 +1,14 @@
+---
+title: AI Medical Agent
+emoji: 🏥
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 7860
+pinned: false
+license: mit
+---
+
 # 🏥 AI 导诊系统
 
 一个基于 GLM-4.5 大模型的智能医疗问诊系统，支持用户端和管理端双入口，具备完整的问诊流程、病历管理、健康建议等功能。
