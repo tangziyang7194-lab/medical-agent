@@ -441,8 +441,8 @@ function toggleNext(el) {
 }
 
 // ====== 对话问诊 ======
-const API_KEY = "6a1e93131a994ae0858753c106c44d5f.jFV5aOGklphXbL87";
-const API_URL = "https://open.bigmodel.cn/api/paas/v4/chat/completions";
+// 前端不存放 API Key，所有 AI 请求通过后端代理
+const API_URL = "/api/chat";
 
 let chatMessages = [];
 
@@ -508,24 +508,22 @@ function sendMsg() {
     content: '你是一位资深主治医师，正在在线问诊。语气温和专业，每次回复不超过150字，每次只问1-2个问题。当收集到足够信息（至少3轮对话后）可以给出诊断建议时，在回复末尾添加【READY】标记。'
   };
 
-  let payload = {
-    model: 'glm-4-plus',
-    messages: [systemMsg, ...chatMessages],
-    temperature: 0.7,
-    max_tokens: 1024
-  };
-
+  // 通过后端代理请求（前端不携带 API Key）
   fetch(API_URL, {
     method: 'POST',
-    headers: {'Content-Type':'application/json', 'Authorization':'Bearer ' + API_KEY},
-    body: JSON.stringify(payload)
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({messages: [systemMsg, ...chatMessages]})
   })
   .then(r => r.json())
   .then(data => {
     hideTyping();
     document.getElementById('sendBtn').disabled = false;
-    let reply = data.choices?.[0]?.message?.content || '抱歉，暂时无法回复。';
-    let isReady = reply.includes('【READY】') && userTurns >= 3;
+    if (data.error) {
+      addMsg('抱歉，暂时无法回复。', 'bot');
+      return;
+    }
+    let reply = data.reply || '抱歉，暂时无法回复。';
+    let isReady = data.ready === true;
     let clean = reply.replace('【READY】','').trim();
     addMsg(clean, 'bot');
     chatMessages.push({role:'assistant', content: clean});

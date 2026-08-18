@@ -417,7 +417,7 @@ def index():
 @app.route('/mobile')
 def mobile():
     """移动端PWA页面"""
-    return send_file(r'C:\Users\30974\PycharmProjects\medical_agent\templates\mobile.html',
+    return send_file(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates', 'mobile.html'),
                      mimetype='text/html')
 
 
@@ -957,7 +957,7 @@ def run_learning():
         def _run():
             result = subprocess.run(
                 ['python', 'self_learning.py'],
-                cwd=r'C:\Users\30974\PycharmProjects\medical_agent',
+                cwd=os.path.dirname(os.path.abspath(__file__)),
                 capture_output=True, text=True, encoding='utf-8',
                 timeout=120)
             # 保存输出到日志

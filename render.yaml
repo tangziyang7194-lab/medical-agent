@@ -1,0 +1,17 @@
+# Render 云部署配置
+# 使用方法: 在 Render 上创建 Web Service 并连接 GitHub 仓库即可
+services:
+  - type: web
+    name: medical-agent
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120
+    envVars:
+      - key: ZHIPUAI_API_KEY
+        sync: false
+      - key: ZHIPUAI_MODEL
+        value: glm-4-plus
+      - key: PYTHONUNBUFFERED
+        value: "1"
+    healthCheckPath: /api/user/status

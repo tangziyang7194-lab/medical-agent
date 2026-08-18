@@ -11,8 +11,8 @@ from zhipuai import ZhipuAI
 import os
 
 # ========== 质谱AI (智谱) 配置 ==========
-# 优先使用环境变量，其次使用默认值
-API_KEY = os.environ.get("ZHIPUAI_API_KEY") or "6a1e93131a994ae0858753c106c44d5f.jFV5aOGklphXbL87"
+# 从环境变量读取 API Key（本地使用 .env，云端使用平台环境变量）
+API_KEY = os.environ.get("ZHIPUAI_API_KEY") or ""
 _MODEL = os.environ.get("ZHIPUAI_MODEL") or "glm-4-plus"
 # 可选：自定义API地址
 _API_BASE = os.environ.get("ZHIPUAI_API_BASE") or "https://open.bigmodel.cn/api/paas/v4"
