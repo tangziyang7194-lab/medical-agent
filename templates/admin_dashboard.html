@@ -1,0 +1,634 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理端 - AI导诊系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: #f0f2f5; min-height: 100vh; color: #333;
+        }
+        .topbar {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: white; padding: 0 24px; height: 60px;
+            display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 100;
+        }
+        .topbar h1 { font-size: 18px; }
+        .topbar h1 span { font-size: 12px; opacity: 0.7; margin-left: 8px; }
+        .topbar-right { display: flex; align-items: center; gap: 16px; }
+        .topbar-right a {
+            color: rgba(255,255,255,0.8); text-decoration: none;
+            font-size: 13px; padding: 6px 12px; border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .topbar-right a:hover { background: rgba(255,255,255,0.1); color: white; }
+        .topbar-right .logout { color: #ff6b6b; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .stats-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 16px; margin-bottom: 24px;
+        }
+        .stat-card {
+            background: white; border-radius: 12px; padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06); text-align: center;
+        }
+        .stat-number { font-size: 32px; font-weight: 700; color: #667eea; }
+        .stat-label { font-size: 13px; color: #888; margin-top: 4px; }
+        .stat-icon { font-size: 24px; margin-bottom: 8px; }
+        .card {
+            background: white; border-radius: 12px; margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden;
+        }
+        .card-header {
+            padding: 16px 20px; font-size: 15px; font-weight: 600;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .card-body { padding: 16px 20px; overflow-x: auto; }
+        .search-box {
+            display: flex; gap: 8px; margin-bottom: 16px;
+        }
+        .search-box input {
+            flex: 1; padding: 8px 12px; border: 1.5px solid #ddd;
+            border-radius: 6px; font-size: 13px;
+        }
+        .search-box input:focus { outline: none; border-color: #667eea; }
+        .search-box button {
+            padding: 8px 16px; background: #667eea; color: white;
+            border: none; border-radius: 6px; cursor: pointer; font-size: 13px;
+        }
+        table {
+            width: 100%; border-collapse: collapse; font-size: 13px;
+        }
+        th {
+            text-align: left; padding: 10px 12px; background: #f8f9fa;
+            color: #555; font-weight: 600; border-bottom: 2px solid #eee;
+            white-space: nowrap;
+        }
+        td {
+            padding: 10px 12px; border-bottom: 1px solid #f0f0f0;
+            max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        tr:hover td { background: #f8f9ff; }
+        .badge {
+            display: inline-block; padding: 2px 8px; border-radius: 4px;
+            font-size: 11px; font-weight: 600;
+        }
+        .badge-red { background: #fce8e6; color: #d93025; }
+        .badge-yellow { background: #fef7e0; color: #e37400; }
+        .badge-green { background: #e6f4ea; color: #1e8e3e; }
+        .btn-delete {
+            background: none; border: 1px solid #ffcdd2; color: #d93025;
+            padding: 4px 10px; border-radius: 4px; cursor: pointer;
+            font-size: 12px; transition: all 0.2s;
+        }
+        .btn-delete:hover { background: #fce8e6; }
+        .btn-refresh {
+            padding: 6px 14px; background: #667eea; color: white;
+            border: none; border-radius: 6px; cursor: pointer; font-size: 12px;
+        }
+        .tabs {
+            display: flex; gap: 0; border-bottom: 2px solid #eee; margin-bottom: 0;
+        }
+        .tab-btn {
+            padding: 12px 20px; cursor: pointer; border: none; background: none;
+            font-size: 13px; font-weight: 500; color: #888;
+            border-bottom: 2px solid transparent; margin-bottom: -2px;
+            transition: all 0.2s;
+        }
+        .tab-btn.active { color: #667eea; border-bottom-color: #667eea; }
+        .tab-btn:hover { color: #667eea; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .empty { text-align: center; padding: 40px; color: #bbb; font-size: 13px; }
+        .toast {
+            position: fixed; top: 80px; right: 20px; padding: 12px 20px;
+            border-radius: 8px; color: white; font-size: 14px;
+            z-index: 999; animation: slideIn 0.3s; display: none;
+        }
+        .toast.success { background: #1e8e3e; }
+        .toast.error { background: #d93025; }
+        @keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .pagination {
+            display: flex; justify-content: center; gap: 6px; padding: 16px 0;
+        }
+        .pagination button {
+            padding: 6px 12px; border: 1px solid #ddd; border-radius: 4px;
+            background: white; cursor: pointer; font-size: 12px;
+        }
+        .pagination button:hover { background: #f0f0f0; }
+        .pagination button.active { background: #667eea; color: white; border-color: #667eea; }
+        @media (max-width: 768px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            .topbar h1 span { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <h1>🔐 管理端 <span>AI导诊系统 · 后台管理</span></h1>
+        <div class="topbar-right">
+            <span style="font-size:12px;opacity:0.8;margin-right:8px;">👤 {{ admin_user.get("username","管理员") }}</span>
+            <a href="/">🏠 首页</a>
+            <a href="/records">📋 病历</a>
+            <a href="/admin/register" style="color:#4ade80;">📝 添加管理员</a>
+            <a href="/admin/health">🩺 健康</a>
+            <a href="/api/admin/export/cases" style="color:#fbbf24;">📥 导出病例</a>
+            <a href="/admin/logout" class="logout">🚪 退出</a>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <div class="container">
+        <!-- 统计数据 -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-number">{{ stats.cases }}</div>
+                <div class="stat-label">病例总数 (learned_cases)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📋</div>
+                <div class="stat-number">{{ stats.consultations }}</div>
+                <div class="stat-label">咨询记录 (consultations)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">👤</div>
+                <div class="stat-number">{{ stats.patients }}</div>
+                <div class="stat-label">患者总数 (patients)</div>
+            </div>
+        </div>
+
+        <!-- 向量数据库状态 -->
+        <div class="card">
+            <div class="card-header">
+                <span>🧠 向量数据库 (ChromaDB)</span>
+                <div>
+                    <span id="vectorCount" style="font-size:13px;color:#667eea;margin-right:12px;"></span>
+                    <button class="btn-refresh" onclick="syncVector()">🔄 同步病例</button>
+                    <button class="btn-delete" onclick="clearVector()" style="margin-left:6px;">🗑 清空</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="search-box">
+                    <input type="text" id="vectorQuery" placeholder="输入症状关键词，测试语义检索..." onkeyup="if(event.key==='Enter')searchVector()">
+                    <button onclick="searchVector()">🔍 语义搜索</button>
+                </div>
+                <div id="vectorResults"></div>
+                <div id="vectorStatus" style="font-size:12px;color:#888;padding:8px 0;"></div>
+            </div>
+        </div>
+
+        <!-- 样例库 Tab -->
+        <div id="tab-samples" class="tab-content">
+            <div class="card-body">
+                <div class="search-box">
+                    <input type="text" id="sampleSearch2" placeholder="搜索症状、诊断、科室..." onkeyup="if(event.key==='Enter')searchSamples()">
+                    <button onclick="searchSamples()">🔍 搜索</button>
+                    <button onclick="loadAllSamples()" style="background:#4ade80;color:#000;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:12px;">🔄 加载全部</button>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+                    <button onclick="loadAllSamples()" style="background:#4ade80;color:#000;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:12px;">🔄 加载全部(项目组1)</button>
+                    <button onclick="syncSamples()" style="background:#f59e0b;color:#fff;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:12px;">🔃 实时同步</button>
+                </div>
+                <div class="search-box">
+                    <input type="text" id="sampleSearch3" placeholder="搜索症状、诊断、科室..." onkeyup="if(event.key==='Enter')searchSamples2()">
+                    <button onclick="searchSamples2()">🔍 搜索</button>
+                </div>
+                <div id="samplePageInfo" style="font-size:12px;color:#888;margin:8px 0;"></div>
+<div id="sampleTableWrap">
+                    <div class="empty">点击「加载全部」或搜索查看样例数据</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 管理员账号信息 -->
+        <div class="card">
+            <div class="card-header">
+                <span>👤 管理员账号</span>
+                <a href="/admin/register" class="btn-refresh" style="text-decoration:none;font-size:12px;">＋ 添加管理员</a>
+            </div>
+            <div class="card-body">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>用户名</th>
+                            <th>手机号</th>
+                            <th>角色</th>
+                            <th>注册时间</th>
+                            <th>最后登录</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for a in admins %}
+                        <tr>
+                            <td>{{ a.id }}</td>
+                            <td><strong>{{ a.username }}</strong></td>
+                            <td>{{ a.phone[:3] }}****{{ a.phone[7:] }}</td>
+                            <td><span class="badge badge-green">{{ a.role }}</span></td>
+                            <td>{{ a.created_at[:16] or '-' }}</td>
+                            <td>{{ a.last_login[:16] or '从未登录' }}</td>
+                            <td>{% if a.is_active %}<span style="color:#1e8e3e;">✅ 正常</span>{% else %}<span style="color:#d93025;">❌ 已禁用</span>{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="card">
+            <div class="card-header" style="border-bottom: 0; padding-bottom: 0;">
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchTab('cases')">📊 病例管理</button>
+                    <button class="tab-btn" onclick="switchTab('consultations')">📋 咨询记录</button>
+                    <button class="tab-btn" onclick="switchTab('samples')">📚 样例库</button>
+                </div>
+                <div>
+                    <button class="btn-refresh" onclick="location.reload()">🔄 刷新</button>
+                </div>
+            </div>
+
+            <!-- 病例管理 Tab -->
+            <div id="tab-cases" class="tab-content active">
+                <div class="card-body">
+                    <div class="search-box">
+                        <input type="text" id="searchInput" placeholder="搜索病例（症状、诊断、科室）..." onkeyup="searchCases(event)">
+                        <button onclick="searchCases()">🔍 搜索</button>
+                    </div>
+                    {% if cases %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>症状</th>
+                                <th>诊断</th>
+                                <th>科室</th>
+                                <th>严重度</th>
+                                <th>项目组</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="casesTable">
+                            {% for c in cases %}
+                            <tr id="case-row-{{ c.id }}">
+                                <td>{{ c.id }}</td>
+                                <td title="{{ c.symptom }}">{{ c.symptom[:60] }}{% if c.symptom|length > 60 %}...{% endif %}</td>
+                                <td title="{{ c.diagnosis }}">{{ c.diagnosis[:40] }}{% if c.diagnosis|length > 40 %}...{% endif %}</td>
+                                <td><span class="badge badge-green">{{ c.dept }}</span></td>
+                                <td><span class="badge {% if c.severity == 'red' %}badge-red{% elif c.severity == 'yellow' %}badge-yellow{% else %}badge-green{% endif %}">{{ c.severity }}</span></td>
+                                <td>{{ c.project_group or '-' }}</td>
+                                <td>
+                                    <button class="btn-delete" onclick="deleteCase({{ c.id }})">🗑 删除</button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <div class="empty">暂无病例数据</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 咨询记录 Tab -->
+            <div id="tab-consultations" class="tab-content">
+                <div class="card-body">
+                    {% if consultations %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>患者ID</th>
+                                <th>症状</th>
+                                <th>科室</th>
+                                <th>严重度</th>
+                                <th>分诊级别</th>
+                                <th>时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in consultations %}
+                            <tr id="consult-row-{{ c.id }}">
+                                <td>{{ c.id }}</td>
+                                <td>{{ c.patient_id }}</td>
+                                <td title="{{ c.symptom_text }}">{{ c.symptom_text[:50] }}{% if c.symptom_text|length > 50 %}...{% endif %}</td>
+                                <td><span class="badge badge-green">{{ c.department or '-' }}</span></td>
+                                <td><span class="badge {% if c.severity == 'red' %}badge-red{% elif c.severity == 'yellow' %}badge-yellow{% else %}badge-green{% endif %}">{{ c.severity or '-' }}</span></td>
+                                <td>{{ c.triage_level or '-' }}</td>
+                                <td>{{ c.created_at[:16] }}</td>
+                                <td>
+                                    <button class="btn-delete" onclick="deleteConsultation({{ c.id }})">🗑 删除</button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <div class="empty">暂无咨询记录</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(name) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + name).classList.add('active');
+            document.querySelector('.tab-btn[onclick*="' + name + '"]').classList.add('active');
+        }
+
+        function showToast(msg, type) {
+            var t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast ' + type;
+            t.style.display = 'block';
+            setTimeout(function() { t.style.display = 'none'; }, 3000);
+        }
+
+        function deleteCase(id) {
+            if (!confirm('确定要删除病例 #' + id + ' 吗？此操作不可恢复！')) return;
+            var btn = document.querySelector('#case-row-' + id + ' .btn-delete');
+            if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
+            fetch('/api/admin/case/delete', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id: id})
+            }).then(function(r) { return r.json(); }).then(function(data) {
+                if (data.success) {
+                    var row = document.getElementById('case-row-' + id);
+                    if (row) {
+                        row.style.transition = 'all 0.3s';
+                        row.style.opacity = '0';
+                        row.style.transform = 'translateX(30px)';
+                        setTimeout(function() { row.remove(); }, 300);
+                    }
+                    showToast('✅ 病例 #' + id + ' 已删除', 'success');
+                } else {
+                    showToast('❌ 删除失败: ' + (data.error || '未知错误'), 'error');
+                    if (btn) { btn.disabled = false; btn.textContent = '🗑 删除'; }
+                }
+            }).catch(function() {
+                showToast('❌ 网络错误', 'error');
+                if (btn) { btn.disabled = false; btn.textContent = '🗑 删除'; }
+            });
+        }
+
+        function deleteConsultation(id) {
+            if (!confirm('确定要删除咨询记录 #' + id + ' 吗？此操作不可恢复！')) return;
+            var btn = document.querySelector('#consult-row-' + id + ' .btn-delete');
+            if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
+            fetch('/api/admin/consultation/delete', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id: id})
+            }).then(function(r) { return r.json(); }).then(function(data) {
+                if (data.success) {
+                    var row = document.getElementById('consult-row-' + id);
+                    if (row) {
+                        row.style.transition = 'all 0.3s';
+                        row.style.opacity = '0';
+                        row.style.transform = 'translateX(30px)';
+                        setTimeout(function() { row.remove(); }, 300);
+                    }
+                    showToast('✅ 咨询记录 #' + id + ' 已删除', 'success');
+                } else {
+                    showToast('❌ 删除失败: ' + (data.error || '未知错误'), 'error');
+                    if (btn) { btn.disabled = false; btn.textContent = '🗑 删除'; }
+                }
+            }).catch(function() {
+                showToast('❌ 网络错误', 'error');
+                if (btn) { btn.disabled = false; btn.textContent = '🗑 删除'; }
+            });
+        }
+
+        function searchCases(e) {
+            if (e && e.key !== 'Enter') return;
+            var q = document.getElementById('searchInput').value.trim();
+            if (!q) { location.reload(); return; }
+            fetch('/api/admin/cases?search=' + encodeURIComponent(q))
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    var tbody = document.getElementById('casesTable');
+                    if (!data || data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="7"><div class="empty">未找到匹配的病例</div></td></tr>';
+                        return;
+                    }
+                    var html = '';
+                    data.forEach(function(r) {
+                        var sevClass = 'badge-green';
+                        if (r.severity === 'red') sevClass = 'badge-red';
+                        else if (r.severity === 'yellow') sevClass = 'badge-yellow';
+                        html += '<tr id="case-row-' + r.id + '">';
+                        html += '<td>' + r.id + '</td>';
+                        html += '<td title="' + (r.symptom || '') + '">' + (r.symptom || '').substring(0, 60) + ((r.symptom || '').length > 60 ? '...' : '') + '</td>';
+                        html += '<td title="' + (r.diagnosis || '') + '">' + (r.diagnosis || '').substring(0, 40) + ((r.diagnosis || '').length > 40 ? '...' : '') + '</td>';
+                        html += '<td><span class="badge badge-green">' + (r.dept || '-') + '</span></td>';
+                        html += '<td><span class="badge ' + sevClass + '">' + (r.severity || '-') + '</span></td>';
+                        html += '<td>' + (r.project_group || '-') + '</td>';
+                        html += '<td><button class="btn-delete" onclick="deleteCase(' + r.id + ')">🗑 删除</button></td>';
+                        html += '</tr>';
+                    });
+                    tbody.innerHTML = html;
+                });
+        }
+
+    // ====== 样例库操作 ======
+    var sampleAllData = [];
+    var samplePage = 1;
+    var samplePerPage = 20;
+
+    function syncSamples() {
+        document.getElementById('sampleTableWrap').innerHTML = '<div class="empty">⏳ 同步中...</div>';
+        fetch('/api/admin/cases')
+            .then(function(r){return r.json()})
+            .then(function(data){
+                if (data && data.length > 0) {
+                    sampleAllData = data;
+                    samplePage = 1;
+                    renderSamplePage();
+                }
+            });
+    }
+
+    function renderSamplePage() {
+        var total = sampleAllData.length;
+        var pages = Math.ceil(total / samplePerPage);
+        var start = (samplePage - 1) * samplePerPage;
+        var end = start + samplePerPage;
+        var pageData = sampleAllData.slice(start, end);
+        renderSampleTable(pageData);
+        document.getElementById('samplePageInfo').innerHTML = '共' + total + '条 第' + samplePage + '/' + pages + '页' +
+            ' <button onclick="samplePage=1;renderSamplePage()" style="padding:2px 8px;font-size:11px;">首页</button>' +
+            ' <button onclick="if(samplePage>1){samplePage--;renderSamplePage()}" style="padding:2px 8px;font-size:11px;">上一页</button>' +
+            ' <button onclick="if(samplePage<pages){samplePage++;renderSamplePage()}" style="padding:2px 8px;font-size:11px;">下一页</button>' +
+            ' <button onclick="samplePage=pages;renderSamplePage()" style="padding:2px 8px;font-size:11px;">末页</button>';
+    }
+
+    function searchSamples2() {
+        var kw = document.getElementById('sampleSearch3').value.trim();
+        if (!kw) { syncSamples(); return; }
+        if (!sampleAllData || sampleAllData.length === 0) {
+            fetch('/api/admin/cases?search=' + encodeURIComponent(kw))
+                .then(function(r){return r.json()})
+                .then(function(data){ sampleAllData = data; samplePage = 1; renderSamplePage(); });
+            return;
+        }
+        var filtered = sampleAllData.filter(function(item){
+            return (item.symptom||'').indexOf(kw)>=0 || (item.diagnosis||'').indexOf(kw)>=0 || (item.dept||'').indexOf(kw)>=0;
+        });
+        var t = sampleAllData; sampleAllData = filtered; samplePage = 1; renderSamplePage(); sampleAllData = t;
+    }
+
+    function loadAllSamples() {
+        document.getElementById('sampleTableWrap').innerHTML = '<div class="empty">⏳ 加载中...</div>';
+        fetch('/api/admin/cases')
+            .then(function(r){return r.json()})
+            .then(function(data){
+                if (!data || data.length === 0) {
+                    document.getElementById('sampleTableWrap').innerHTML = '<div class="empty">暂无样例数据</div>';
+                    return;
+                }
+                sampleAllData = data;
+                samplePage = 1;
+                renderSamplePage();
+            });
+    }
+
+    function searchSamples() {
+        var q = document.getElementById('sampleSearch2').value.trim();
+        var url = '/api/admin/cases';
+        if (q) url += '?search=' + encodeURIComponent(q);
+        document.getElementById('sampleTableWrap').innerHTML = '<div class="empty">⏳ 搜索中...</div>';
+        fetch(url).then(function(r){return r.json()}).then(function(data){
+            if (!data || data.length === 0) {
+                document.getElementById('sampleTableWrap').innerHTML = '<div class="empty">未找到匹配数据</div>';
+                return;
+            }
+            renderSampleTable(data);
+        });
+    }
+
+    function renderSampleTable(data) {
+        var html = '<table><thead><tr><th>ID</th><th>症状</th><th>诊断</th><th>科室</th><th>严重度</th><th>来源</th><th>操作</th></tr></thead><tbody>';
+        data.forEach(function(r){
+            var sev = r.severity === 'red' ? 'badge-red' : r.severity === 'yellow' ? 'badge-yellow' : 'badge-green';
+            html += '<tr id="s-row-' + r.id + '">';
+            html += '<td>' + (r.id||0) + '</td>';
+            html += '<td title="' + (r.symptom||'') + '">' + ((r.symptom||'').substring(0,60)) + '</td>';
+            html += '<td>' + ((r.diagnosis||'').substring(0,30)) + '</td>';
+            html += '<td><span class="badge badge-green">' + (r.dept||'-') + '</span></td>';
+            html += '<td><span class="badge ' + sev + '">' + (r.severity||'-') + '</span></td>';
+            html += '<td>' + (r.source||'-') + '</td>';
+            html += '<td><button class="btn-delete" onclick="adminDeleteSample(' + r.id + ')">🗑 删除</button></td>';
+            html += '</tr>';
+        });
+        html += '</tbody></table>';
+        html += '<div style="padding:8px 0;font-size:12px;color:#888;">共 ' + data.length + ' 条</div>';
+        document.getElementById('sampleTableWrap').innerHTML = html;
+    }
+
+    function adminDeleteSample(id) {
+        if (!confirm('确定删除病例 #' + id + ' 吗？')) return;
+        var btn = document.querySelector('#s-row-' + id + ' .btn-delete');
+        if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
+        fetch('/api/admin/case/delete', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({id:id})
+        }).then(function(r){return r.json()}).then(function(data){
+            if (data.success) {
+                var row = document.getElementById('s-row-' + id);
+                if (row) { row.style.opacity='0'; setTimeout(function(){row.remove();},300); }
+                showToast('✅ 已删除', 'success');
+            } else {
+                showToast('❌ 删除失败', 'error');
+                if (btn) { btn.disabled = false; btn.textContent = '🗑 删除'; }
+            }
+        });
+    }
+
+    // ====== 向量数据库操作 ======
+    function loadVectorStats() {
+        fetch('/api/admin/vector/stats')
+            .then(function(r){return r.json()})
+            .then(function(data){
+                document.getElementById('vectorCount').textContent = '📊 ' + data.count + ' 条向量';
+            });
+    }
+
+    function syncVector() {
+        var btn = event.target;
+        btn.disabled = true;
+        btn.textContent = '⏳ 同步中...';
+        document.getElementById('vectorStatus').textContent = '正在同步病例到向量库...';
+        fetch('/api/admin/vector/sync', {method:'POST'})
+            .then(function(r){return r.json()})
+            .then(function(data){
+                btn.disabled = false;
+                btn.textContent = '🔄 同步病例';
+                if (data.error) {
+                    document.getElementById('vectorStatus').innerHTML = '<span style="color:#d93025;">❌ ' + data.error + '</span>';
+                } else {
+                    document.getElementById('vectorStatus').innerHTML = '<span style="color:#1e8e3e;">✅ 同步完成：共 ' + data.total + ' 条病例，已添加 ' + data.added + ' 条向量</span>';
+                    loadVectorStats();
+                }
+            });
+    }
+
+    function clearVector() {
+        if (!confirm('确定清空所有向量数据？这不会影响MySQL中的病例。')) return;
+        fetch('/api/admin/vector/clear', {method:'POST'})
+            .then(function(r){return r.json()})
+            .then(function(data){
+                if (data.success) {
+                    document.getElementById('vectorStatus').innerHTML = '<span style="color:#d93025;">🗑 向量库已清空</span>';
+                    loadVectorStats();
+                }
+            });
+    }
+
+    function searchVector() {
+        var q = document.getElementById('vectorQuery').value.trim();
+        if (!q) return;
+        var resultsDiv = document.getElementById('vectorResults');
+        resultsDiv.innerHTML = '<div style="padding:10px;color:#888;">⏳ 搜索中...</div>';
+        fetch('/api/admin/vector/search', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({query: q})
+        }).then(function(r){return r.json()}).then(function(data){
+            if (!data.success || !data.results || data.results.length === 0) {
+                resultsDiv.innerHTML = '<div style="padding:10px;color:#999;">未找到相似病例</div>';
+                return;
+            }
+            var html = '<table><thead><tr><th>相似度</th><th>科室</th><th>症状</th><th>诊断</th><th>严重度</th></tr></thead><tbody>';
+            data.results.forEach(function(r){
+                var sev = r.severity === 'red' ? 'badge-red' : r.severity === 'yellow' ? 'badge-yellow' : 'badge-green';
+                var sim = (r.similarity * 100).toFixed(0) + '%';
+                html += '<tr><td><strong>' + sim + '</strong></td>';
+                html += '<td><span class="badge badge-green">' + (r.department||'-') + '</span></td>';
+                html += '<td>' + (r.symptoms||'').substring(0,60) + '</td>';
+                html += '<td>' + (r.diagnosis||'').substring(0,30) + '</td>';
+                html += '<td><span class="badge ' + sev + '">' + (r.severity||'-') + '</span></td></tr>';
+            });
+            html += '</tbody></table>';
+            resultsDiv.innerHTML = html;
+            document.getElementById('vectorStatus').textContent = '找到 ' + data.results.length + ' 条相似病例';
+        });
+    }
+
+    // 页面加载时加载向量统计
+    loadVectorStats();
+</script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 环境和配置
+.env
+.venv
+env/
+venv/
+ENV/
+*.log
+
+# 数据和缓存
+.vector_db/
+*.db
+*.sqlite
+*.sqlite3
+users.json
+logs/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# 临时文件
+*.tmp
+*.bak
+*.old
+*.cache
+
+# 文档和部署
+.git/
+.gitignore
+README.md
+QUICK_START.md
+PROJECT_COMPLETION_SUMMARY.md
+
+# 开发工具
+.pytest_cache/
+.coverage
+htmlcov/
+
+# 证书和密钥
+ssl/
+*.pem
+*.key
+*.crt
+
+# 备份文件
+*_backup.sql
+*.sql.gz

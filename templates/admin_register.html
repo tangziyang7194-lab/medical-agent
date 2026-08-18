@@ -1,0 +1,208 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员注册 - AI导诊系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            padding: 20px;
+        }
+        .register-box {
+            background: white; border-radius: 16px; padding: 36px;
+            width: 420px; max-width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .logo { text-align: center; margin-bottom: 24px; }
+        .logo-icon { font-size: 48px; }
+        .logo h1 { font-size: 20px; color: #1a1a2e; margin-top: 8px; }
+        .logo p { font-size: 13px; color: #888; margin-top: 4px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label {
+            display: block; font-size: 13px; color: #555;
+            margin-bottom: 5px; font-weight: 500;
+        }
+        .form-group input {
+            width: 100%; padding: 11px 14px; border: 1.5px solid #ddd;
+            border-radius: 8px; font-size: 14px; transition: all 0.2s;
+        }
+        .form-group input:focus {
+            outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+        }
+        .input-with-btn {
+            display: flex; gap: 8px;
+        }
+        .input-with-btn input { flex: 1; }
+        .input-with-btn button {
+            padding: 11px 14px; background: #667eea; color: white;
+            border: none; border-radius: 8px; cursor: pointer;
+            font-size: 13px; white-space: nowrap; transition: all 0.2s;
+        }
+        .input-with-btn button:hover { background: #5a6fd6; }
+        .input-with-btn button:disabled { background: #ccc; cursor: not-allowed; }
+        .btn {
+            width: 100%; padding: 13px; border: none; border-radius: 8px;
+            font-size: 15px; font-weight: 600; cursor: pointer;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white; transition: all 0.2s; margin-top: 8px;
+        }
+        .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(102,126,234,0.3); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+        .error {
+            background: #fce8e6; color: #d93025; padding: 10px 14px;
+            border-radius: 8px; font-size: 13px; margin-bottom: 16px;
+            text-align: center;
+        }
+        .success {
+            background: #e6f4ea; color: #1e8e3e; padding: 10px 14px;
+            border-radius: 8px; font-size: 13px; margin-bottom: 16px;
+            text-align: center;
+        }
+        .links {
+            text-align: center; margin-top: 16px;
+        }
+        .links a {
+            color: #667eea; text-decoration: none; font-size: 13px;
+        }
+        .links a:hover { text-decoration: underline; }
+        .tip {
+            font-size: 12px; color: #999; margin-top: 4px;
+        }
+        .required::after {
+            content: " *"; color: #d93025;
+        }
+    </style>
+</head>
+<body>
+    <div class="register-box">
+        <div class="logo">
+            <div class="logo-icon">📝</div>
+            <h1>管理员注册</h1>
+            <p>AI导诊系统 · 创建管理账号</p>
+        </div>
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% endif %}
+        {% if success %}
+        <div class="success">{{ success }}</div>
+        <div class="links">
+            <a href="/admin/login">→ 前往登录</a> ·
+            <a href="/">返回首页</a>
+        </div>
+        {% else %}
+        <form method="POST" action="/admin/register" id="registerForm">
+            <div class="form-group">
+                <label class="required">管理员账号</label>
+                <input type="text" name="username" id="username" placeholder="至少2个字符，字母或数字" required minlength="2"
+                       onblur="checkUsername(this.value)">
+                <div class="tip" id="usernameTip"></div>
+            </div>
+            <div class="form-group">
+                <label class="required">登录密码</label>
+                <input type="password" name="password" placeholder="至少6个字符" required minlength="6">
+            </div>
+            <div class="form-group">
+                <label class="required">手机号码</label>
+                <div class="input-with-btn">
+                    <input type="tel" name="phone" id="phone" placeholder="11位手机号" required pattern="1[3-9]\d{9}">
+                    <button type="button" id="smsBtn" onclick="sendSms()">获取验证码</button>
+                </div>
+                <div class="tip" id="phoneTip"></div>
+            </div>
+            <div class="form-group">
+                <label class="required">短信验证码</label>
+                <input type="text" name="sms_code" placeholder="请输入6位验证码" required maxlength="6" inputmode="numeric">
+            </div>
+            <button type="submit" class="btn" id="submitBtn">立即注册</button>
+        </form>
+        <div class="links">
+            <a href="/admin/login">已有账号？去登录 →</a> ·
+            <a href="/">返回首页</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        var smsTimer = null;
+        var smsCountdown = 0;
+
+        function checkUsername(val) {
+            var tip = document.getElementById('usernameTip');
+            if (!val || val.length < 2) {
+                tip.textContent = '';
+                return;
+            }
+            fetch('/api/admin/check_username', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({username: val})
+            }).then(function(r) { return r.json(); }).then(function(data) {
+                if (data.available) {
+                    tip.textContent = '✅ 用户名可用';
+                    tip.style.color = '#1e8e3e';
+                } else {
+                    tip.textContent = '❌ 用户名已被注册';
+                    tip.style.color = '#d93025';
+                }
+            });
+        }
+
+        function sendSms() {
+            var phone = document.getElementById('phone').value.trim();
+            var btn = document.getElementById('smsBtn');
+            var tip = document.getElementById('phoneTip');
+            
+            if (!/^1[3-9]\d{9}$/.test(phone)) {
+                tip.textContent = '❌ 请输入11位有效手机号';
+                tip.style.color = '#d93025';
+                return;
+            }
+            tip.textContent = '⏳ 正在发送...';
+            tip.style.color = '#667eea';
+            btn.disabled = true;
+
+            fetch('/api/admin/send_sms', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({phone: phone})
+            }).then(function(r) { return r.json(); }).then(function(data) {
+                if (data.success) {
+                    tip.textContent = '✅ 验证码已发送' + (data.dev_code ? '（开发模式：' + data.dev_code + '）' : '');
+                    tip.style.color = '#1e8e3e';
+                    startCountdown(btn);
+                } else {
+                    tip.textContent = '❌ ' + (data.error || '发送失败');
+                    tip.style.color = '#d93025';
+                    btn.disabled = false;
+                }
+            }).catch(function() {
+                tip.textContent = '❌ 网络错误';
+                tip.style.color = '#d93025';
+                btn.disabled = false;
+            });
+        }
+
+        function startCountdown(btn) {
+            smsCountdown = 60;
+            btn.textContent = smsCountdown + 's';
+            if (smsTimer) clearInterval(smsTimer);
+            smsTimer = setInterval(function() {
+                smsCountdown--;
+                if (smsCountdown <= 0) {
+                    clearInterval(smsTimer);
+                    smsTimer = null;
+                    btn.textContent = '重新获取';
+                    btn.disabled = false;
+                } else {
+                    btn.textContent = smsCountdown + 's';
+                }
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

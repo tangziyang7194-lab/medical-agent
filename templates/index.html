@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 导诊系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #e8f0fe 0%, #f5f3ff 100%);
+            min-height: 100vh;
+        }
+        .container { max-width: 520px; margin: 0 auto; padding: 16px; }
+        .hero { text-align: center; padding: 28px 0 16px; }
+        .logo { font-size: 42px; }
+        .title {
+            font-size: 20px; font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .subtitle { font-size: 12px; color: #999; margin-top: 2px; }
+        .btn-group { display: flex; gap: 8px; margin-bottom: 16px; }
+        .btn {
+            flex: 1; padding: 13px; border: none; border-radius: 10px;
+            font-size: 14px; font-weight: 600; cursor: pointer;
+            text-decoration: none; text-align: center; transition: all 0.2s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white; box-shadow: 0 4px 12px rgba(102,126,234,0.2);
+        }
+        .btn-primary:hover { transform: translateY(-1px); }
+        .btn-secondary {
+            background: white; color: #667eea;
+            border: 2px solid #e0d8f0;
+        }
+        .btn-secondary:hover { border-color: #667eea; }
+        .pg-card {
+            background: white; border-radius: 12px; margin-bottom: 10px;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.04); overflow: hidden;
+        }
+        .pg-header {
+            padding: 12px 16px; font-size: 15px; font-weight: 600;
+            background: linear-gradient(135deg, #f5f3ff, #e8f0fe);
+            color: #333; cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .pg-header:hover { opacity: 0.9; }
+        .pg-count { font-size: 12px; color: #667eea; }
+        .year-block { border-top: 1px solid #f0f0f0; }
+        .year-header {
+            padding: 10px 16px; font-size: 14px; font-weight: 500; color: #555;
+            cursor: pointer; display: flex; justify-content: space-between;
+            align-items: center; background: #fafafa;
+        }
+        .year-header:hover { background: #f5f5f5; }
+        .dept-list { padding: 0 16px 8px 32px; background: #fff; }
+        .dept-item {
+            display: flex; justify-content: space-between; padding: 7px 0;
+            font-size: 13px; color: #333; cursor: pointer;
+            border-bottom: 1px solid #f8f8f8; transition: all 0.2s;
+        }
+        .dept-item:hover { color: #667eea; background: #fafafa; margin: 0 -8px; padding: 7px 8px; border-radius: 4px; }
+        .dept-name { font-weight: 500; }
+        .dept-count { color: #999; font-size: 12px; }
+        .arrow { transition: transform 0.2s; font-size: 10px; color: #aaa; display: inline-block; }
+        .arrow.down { transform: rotate(90deg); }
+        .empty { text-align: center; padding: 40px 20px; color: #ccc; font-size: 13px; }
+        .powered { text-align: center; padding: 20px; font-size: 11px; color: #ccc; }
+
+        /* -------- 弹窗 Modal -------- */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.45); z-index: 999;
+            justify-content: center; align-items: center; padding: 20px;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal-box {
+            background: white; border-radius: 16px; max-width: 520px;
+            width: 100%; max-height: 80vh; overflow-y: auto;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15); animation: modalIn 0.25s;
+        }
+        @keyframes modalIn { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+        .modal-header {
+            padding: 16px 20px; font-size: 16px; font-weight: 600;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white; border-radius: 16px 16px 0 0;
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 1;
+        }
+        .modal-close {
+            width: 28px; height: 28px; border-radius: 50%; border: none;
+            background: rgba(255,255,255,0.2); color: white;
+            font-size: 16px; cursor: pointer; display: flex;
+            align-items: center; justify-content: center;
+        }
+        .modal-body { padding: 16px 20px; }
+        .modal-case {
+            padding: 10px 12px; border: 1px solid #f0f0f0; border-radius: 8px;
+            margin-bottom: 8px; font-size: 13px; line-height: 1.5;
+        }
+        .modal-case .case-diag { font-weight: 600; color: #667eea; }
+        .modal-case .case-symp { color: #555; margin: 4px 0; }
+        .modal-case .case-meta { font-size: 11px; color: #999; }
+        .modal-case .case-meta a { color: #1a73e8; text-decoration: none; }
+        .modal-count { font-size: 12px; color: rgba(255,255,255,0.8); }
+        .modal-empty {
+            text-align: center; padding: 30px; color: #999; font-size: 13px;
+        }
+        .badge {
+            display: inline-block; padding: 1px 6px; border-radius: 3px;
+            font-size: 10px; font-weight: 600;
+        }
+        .badge-red { background: #fce8e6; color: #d93025; }
+        .badge-yellow { background: #fef7e0; color: #e37400; }
+        .badge-green { background: #e6f4ea; color: #1e8e3e; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="hero">
+        <div class="logo">🏥</div>
+        <div class="title">AI 导诊系统</div>
+        <div class="subtitle">GLM-4.5 智能医学体 · 样例库 {{ case_count }} 例</div>
+    </div>
+
+    <div class="btn-group">
+        <a href="/chat" class="btn btn-primary">💬 开始问诊</a>
+        <a href="/records" class="btn btn-secondary">📋 病历记录</a>
+    </div>
+
+    {% if project_groups %}
+        {% for pg_name, years in project_groups.items() %}
+        <div class="pg-card">
+            <div class="pg-header" onclick="toggleNext(this)">
+                <span>📂 {{ pg_name }}</span>
+                <span class="pg-count">
+                    {% set total = namespace(v=0) %}
+                    {% for y, months in years.items() %}
+                        {% for m, depts in months.items() %}
+                            {% for d in depts %}
+                                {% set total.v = total.v + d.count %}
+                            {% endfor %}
+                        {% endfor %}
+                    {% endfor %}
+                    {{ total.v }}例 <span class="arrow down">▶</span>
+                </span>
+            </div>
+            <div class="year-block">
+                {% for year, months in years.items() %}
+                <div>
+                    <div class="year-header" onclick="toggleNext(this)">
+                        <span>📅 {{ year }}年</span>
+                        <span class="arrow down">▶</span>
+                    </div>
+                    <div class="dept-list">
+                        {% for month, depts in months.items() %}
+                            {% for d in depts %}
+                            <div class="dept-item" onclick='showCases({{ d.cases|tojson|safe }}, "{{ d.dept }}")'>
+                                <span class="dept-name">🏥 {{ d.dept }}</span>
+                                <span class="dept-count">{{ d.count }}例 ›</span>
+                            </div>
+                            {% endfor %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty">
+            <div style="font-size:36px;margin-bottom:8px;">📭</div>
+            暂无样例数据
+        </div>
+    {% endif %}
+
+    <div class="powered">Powered by GLM-4.5 · Hermes Agent</div>
+</div>
+
+<!-- 弹窗 -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <span id="modalTitle">🏥 科室详情</span>
+            <span id="modalCount" class="modal-count"></span>
+            <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body" id="modalBody">
+            <div class="modal-empty">加载中...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleNext(el) {
+    var next = el.nextElementSibling;
+    var arrow = el.querySelector('.arrow');
+    if (next) {
+        var isHidden = next.style.display === 'none' || next.style.display === '';
+        next.style.display = isHidden ? 'block' : 'none';
+        if (arrow) arrow.classList.toggle('down');
+    }
+}
+
+function showCases(cases, deptName) {
+    document.getElementById('modalTitle').textContent = '🏥 ' + deptName;
+    document.getElementById('modalCount').textContent = cases.length + '例';
+    var body = document.getElementById('modalBody');
+    
+    if (!cases || cases.length === 0) {
+        body.innerHTML = '<div class="modal-empty">暂无详细病例数据</div>';
+        return;
+    }
+
+    var pageSize = 20;
+    var totalPages = Math.ceil(cases.length / pageSize);
+    var currentPage = 1;
+
+    function renderPage(page) {
+        currentPage = page;
+        var start = (page - 1) * pageSize;
+        var end = Math.min(start + pageSize, cases.length);
+        var pageCases = cases.slice(start, end);
+        var html = '';
+
+        pageCases.forEach(function(c) {
+            var sevClass = 'badge-green';
+            if (c.severity === 'red') sevClass = 'badge-red';
+            else if (c.severity === 'yellow') sevClass = 'badge-yellow';
+            
+            html += '<div class="modal-case">';
+            html += '  <div style="display:flex;justify-content:space-between;align-items:flex-start;">';
+            html += '    <div style="flex:1;">';
+            html += '      <span class="case-diag">🩺 ' + (c.diagnosis || '待诊断') + '</span>';
+            html += '      <span class="badge ' + sevClass + '">' + (c.severity || 'green') + '</span>';
+            html += '    </div>';
+            html += '    <button onclick="deleteCase(' + (c.id || 0) + ', this)" style="background:none;border:none;color:#d93025;cursor:pointer;font-size:16px;padding:0 0 0 8px;" title="删除">🗑️</button>';
+            html += '  </div>';
+            html += '  <div class="case-symp">📝 ' + (c.symptom || '无描述') + '</div>';
+            html += '  <div class="case-meta">';
+            html += '    🔗 <a href="' + (c.source_url || '#') + '" target="_blank">来源: GLM-4.5</a>';
+            html += '    <span style="margin-left:8px;color:#999;">ID: ' + (c.id || '-') + '</span>';
+            html += '  </div>';
+            html += '</div>';
+        });
+
+        // 分页导航
+        if (totalPages > 1) {
+            html += '<div style="display:flex;justify-content:center;align-items:center;gap:8px;padding:10px 0;">';
+            html += '  <button onclick="renderPage(' + (currentPage - 1) + ')" ' + (currentPage <= 1 ? 'disabled style="opacity:0.3;"' : '') + ' style="background:none;border:1px solid #ddd;border-radius:4px;padding:4px 10px;cursor:pointer;">‹</button>';
+            html += '  <span style="font-size:13px;color:#666;">第 ' + currentPage + ' / ' + totalPages + ' 页</span>';
+            html += '  <button onclick="renderPage(' + (currentPage + 1) + ')" ' + (currentPage >= totalPages ? 'disabled style="opacity:0.3;"' : '') + ' style="background:none;border:1px solid #ddd;border-radius:4px;padding:4px 10px;cursor:pointer;">›</button>';
+            html += '</div>';
+        }
+
+        body.innerHTML = html;
+    }
+
+    renderPage(1);
+    window.renderPage = renderPage;
+    document.getElementById('modalOverlay').classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal(e) {
+    if (e && e.target !== e.currentTarget) return;
+    document.getElementById('modalOverlay').classList.remove('show');
+    document.body.style.overflow = '';
+}
+
+function deleteCase(id, btn) {
+    if (!confirm('确定要删除这条病例吗？')) return;
+    btn.disabled = true;
+    btn.textContent = '⏳';
+    fetch('/api/case/delete', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({id: id})
+    }).then(r => r.json()).then(data => {
+        if (data.success) {
+            // 移除该病例卡片
+            var card = btn.closest('.modal-case');
+            card.style.transition = 'all 0.3s';
+            card.style.opacity = '0';
+            card.style.transform = 'translateX(30px)';
+            setTimeout(function() { card.remove(); location.reload(); }, 300);
+        } else {
+            alert('删除失败: ' + (data.error || '未知错误'));
+            btn.disabled = false;
+            btn.textContent = '🗑️';
+        }
+    }).catch(function() {
+        alert('网络错误');
+        btn.disabled = false;
+        btn.textContent = '🗑️';
+    });
+}
+</script>
+</body>
+</html>

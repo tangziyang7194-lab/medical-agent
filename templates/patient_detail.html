@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>患者详情 - AI智能导诊</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #e8f0fe 0%, #f5f3ff 100%);
+            min-height: 100vh; color: #333;
+        }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        .header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white; padding: 20px; border-radius: 16px;
+            margin-bottom: 20px; text-align: center;
+        }
+        .header h2 { font-size: 18px; }
+        .card {
+            background: white; border-radius: 12px; padding: 20px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 12px;
+        }
+        .card-title { font-size: 15px; font-weight: 600; color: #667eea; margin-bottom: 12px; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; }
+        .info-grid .label { color: #999; }
+        .info-grid .value { font-weight: 500; }
+        .consult-item {
+            padding: 12px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 8px;
+            font-size: 13px;
+        }
+        .consult-item .time { color: #999; font-size: 12px; }
+        .consult-item .dept { display: inline-block; padding: 2px 8px; background: #f5f3ff; border-radius: 4px; font-size: 12px; }
+        .badge {
+            display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;
+        }
+        .badge-red { background: #fce8e6; color: #d93025; }
+        .badge-yellow { background: #fef7e0; color: #e37400; }
+        .badge-green { background: #e6f4ea; color: #1e8e3e; }
+        .nav { text-align: center; margin-bottom: 12px; }
+        .nav a { color: #667eea; text-decoration: none; font-size: 13px; }
+        .empty { text-align: center; padding: 40px; color: #999; }
+        .footer { text-align: center; padding: 20px; color: #aaa; font-size: 12px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h2>👤 患者详情</h2>
+        <div>{{ patient.get('surname', '未知') }} · {{ patient.get('patient_id', '') }}</div>
+    </div>
+    <div class="nav"><a href="/records">← 返回病历列表</a></div>
+
+    {% if not patient %}
+    <div class="card empty">未找到该患者</div>
+    {% else %}
+    <div class="card">
+        <div class="card-title">📋 基本信息</div>
+        <div class="info-grid">
+            <div><span class="label">编号：</span><span class="value">{{ patient.patient_id }}</span></div>
+            <div><span class="label">姓名：</span><span class="value">{{ patient.surname }}</span></div>
+            <div><span class="label">性别：</span><span class="value">{{ patient.gender }}</span></div>
+            <div><span class="label">年龄：</span><span class="value">{{ patient.age }}岁</span></div>
+            <div><span class="label">出生：</span><span class="value">{{ patient.birth_date }}</span></div>
+            <div><span class="label">地区：</span><span class="value">{{ patient.location }}</span></div>
+            <div><span class="label">邮箱：</span><span class="value">{{ patient.email }}</span></div>
+            <div><span class="label">注册时间：</span><span class="value">{{ patient.created_at[:10] }}</span></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">🏥 问诊记录（{{ consultations|length }}次）</div>
+        {% if not consultations %}
+        <div class="empty">暂无问诊记录</div>
+        {% else %}
+        {% for c in consultations %}
+        <div class="consult-item">
+            <div class="time">{{ c.created_at[:19] }}</div>
+            <div style="margin: 4px 0;">
+                <span class="dept">{{ c.department }}</span>
+                <span class="badge {% if c.severity == 'red' %}badge-red{% elif c.severity == 'yellow' %}badge-yellow{% else %}badge-green{% endif %}">
+                    {{ c.severity }}
+                </span>
+                <span style="color:#999; font-size:12px; margin-left:8px;">分诊: {{ c.triage_level }}</span>
+            </div>
+            <div style="color:#666;"><strong>主诉：</strong>{{ c.symptom_text[:80] if c.symptom_text else '无' }}</div>
+            {% if c.disease_probs %}
+            <div style="color:#667eea; font-size:12px; margin-top:4px;">
+                🔬 AI评估：{{ c.disease_probs[:60] }}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+<div class="footer">AI 智能导诊系统 · GLM-4.5 驱动</div>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快速问诊 - 智能导诊</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #e8f0fe 0%, #f0f4ff 100%);
+            min-height: 100vh; color: #333;
+        }
+        .container { max-width: 640px; margin: 0 auto; padding: 20px; }
+        .header {
+            background: linear-gradient(135deg, #1a73e8, #4a90d9);
+            color: white; padding: 24px 20px; border-radius: 16px;
+            text-align: center; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(26,115,232,0.3);
+        }
+        .header h1 { font-size: 20px; }
+        .header p { font-size: 13px; opacity: 0.9; margin-top: 4px; }
+        .card {
+            background: white; border-radius: 12px; padding: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 16px;
+        }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; color: #1a73e8; }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; font-weight: 500; }
+        .form-row { display: flex; gap: 10px; }
+        .form-row .form-group { flex: 1; }
+        input, select, textarea {
+            width: 100%; padding: 10px 12px; border: 1.5px solid #ddd;
+            border-radius: 8px; font-size: 14px; transition: border-color 0.2s;
+            background: #fafafa; font-family: inherit;
+        }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #1a73e8; background: #fff; }
+        textarea { min-height: 80px; resize: vertical; }
+        .btn {
+            width: 100%; padding: 13px; border: none; border-radius: 8px;
+            font-size: 16px; font-weight: 600; cursor: pointer;
+            background: #1a73e8; color: white; transition: all 0.2s;
+        }
+        .btn:hover { background: #1557b0; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(26,115,232,0.3); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .region-selects { display: flex; flex-direction: column; gap: 10px; }
+        .tip { font-size: 12px; color: #999; margin-top: 4px; }
+        .footer { text-align: center; padding: 20px; color: #999; font-size: 12px; }
+        .loading-overlay {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.85); z-index: 999;
+            justify-content: center; align-items: center; flex-direction: column;
+        }
+        .loading-overlay.show { display: flex; }
+        .spinner {
+            width: 40px; height: 40px; border: 4px solid #e0e0e0;
+            border-top-color: #1a73e8; border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { margin-top: 12px; color: #666; font-size: 14px; }
+        @media (max-width: 480px) {
+            .container { padding: 12px; }
+            .card { padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+<div class="loading-overlay" id="loading">
+    <div class="spinner"></div>
+    <div class="loading-text">🩺 正在分析您的症状，请稍候...</div>
+</div>
+
+<div class="container">
+    <div class="header">
+        <h1>🤖 AI 快速问诊</h1>
+        <p>GLM-4.5 智能医学体 · 填写症状即可获取诊断建议</p>
+    </div>
+
+    <div class="card">
+        <div class="card-title">📋 患者信息 + 症状</div>
+        <form method="POST" action="/quick" onsubmit="document.getElementById('loading').classList.add('show')">
+
+            <div class="form-group">
+                <label>姓氏</label>
+                <input type="text" name="surname" placeholder="如：张" required>
+            </div>
+
+            <div class="form-group">
+                <label>出生日期</label>
+                <div class="form-row">
+                    <select name="year" required>
+                        <option value="">年</option>
+                        {% for y in year_range %}
+                        <option value="{{ y }}">{{ y }}年</option>
+                        {% endfor %}
+                    </select>
+                    <select name="month" required>
+                        <option value="">月</option>
+                        {% for m in month_range %}
+                        <option value="{{ m }}">{{ m }}月</option>
+                        {% endfor %}
+                    </select>
+                    <select name="day" required>
+                        <option value="">日</option>
+                        {% for d in day_range %}
+                        <option value="{{ d }}">{{ d }}日</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>性别</label>
+                <select name="gender" required>
+                    <option value="">请选择</option>
+                    <option value="男">男</option>
+                    <option value="女">女</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>所在地</label>
+                <div class="region-selects">
+                    <select id="province" name="province" required>
+                        <option value="">请选择省份</option>
+                        {% for p in provinces %}
+                        <option value="{{ p }}">{{ p }}</option>
+                        {% endfor %}
+                    </select>
+                    <select id="city" name="city" disabled>
+                        <option value="">请先选择省份</option>
+                    </select>
+                    <select id="district" name="district" disabled>
+                        <option value="">请先选择城市</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>症状描述 <span style="color:#d93025;">*</span></label>
+                <textarea name="symptom" placeholder="请详细描述您的症状，例如：&#10;最近一个月大便带血，暗红色，还伴有腹痛，体重明显下降..." required></textarea>
+                <div class="tip">请详细说明部位、持续时间、程度、伴随症状等</div>
+            </div>
+
+            <div class="form-group">
+                <label>邮箱（可选，用于接收PDF报告）</label>
+                <input type="email" name="email" placeholder="name@qq.com">
+            </div>
+
+            <button type="submit" class="btn">🚀 开始诊断</button>
+        </form>
+    </div>
+
+    <div class="footer">
+        ⚕️ AI导诊仅供参考 · 紧急情况请拨打120
+    </div>
+</div>
+
+<script>
+function loadCities() {
+    const province = document.getElementById('province').value;
+    const citySel = document.getElementById('city');
+    const distSel = document.getElementById('district');
+    citySel.innerHTML = '<option value="">加载中...</option>';
+    citySel.disabled = true;
+    distSel.innerHTML = '<option value="">请先选择城市</option>';
+    distSel.disabled = true;
+    if (!province) {
+        citySel.innerHTML = '<option value="">请先选择省份</option>';
+        return;
+    }
+    fetch('/api/cities?province=' + encodeURIComponent(province))
+        .then(r => r.json())
+        .then(cities => {
+            if (cities.length === 0) {
+                citySel.innerHTML = '<option value="' + province + '">' + province + '</option>';
+                citySel.disabled = false;
+                loadDistricts();
+                return;
+            }
+            citySel.innerHTML = '<option value="">请选择城市</option>' +
+                cities.map(c => '<option value="' + c + '">' + c + '</option>').join('');
+            citySel.disabled = false;
+        });
+}
+function loadDistricts() {
+    const city = document.getElementById('city').value;
+    const distSel = document.getElementById('district');
+    distSel.innerHTML = '<option value="">加载中...</option>';
+    if (!city) {
+        distSel.innerHTML = '<option value="">请先选择城市</option>';
+        distSel.disabled = true;
+        return;
+    }
+    fetch('/api/districts?city=' + encodeURIComponent(city))
+        .then(r => r.json())
+        .then(districts => {
+            if (districts.length === 0) {
+                distSel.innerHTML = '<option value="">（无下级区划）</option>';
+                distSel.disabled = false;
+                return;
+            }
+            distSel.innerHTML = '<option value="">请选择区/县</option>' +
+                districts.map(d => '<option value="' + d + '">' + d + '</option>').join('');
+            distSel.disabled = false;
+        });
+}
+document.getElementById('province').addEventListener('change', loadCities);
+document.getElementById('city').addEventListener('change', loadDistricts);
+</script>
+<div class="nav-links" style="text-align:center; padding:12px; font-size:12px;">
+    <a href="/" style="color:#667eea; text-decoration:none;">🏠 首页</a>
+    &nbsp;·&nbsp;
+    <a href="/records" style="color:#667eea; text-decoration:none;">📋 病历记录</a>
+    &nbsp;·&nbsp;
+    <a href="/learning" style="color:#667eea; text-decoration:none;">🧠 学习中心</a>
+    &nbsp;·&nbsp;
+    <a href="/settings" style="color:#667eea; text-decoration:none;">📧 邮箱配置</a>
+</div>
+</body>
+</html>

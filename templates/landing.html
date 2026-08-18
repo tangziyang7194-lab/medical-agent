@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI导诊系统 - 医疗问诊智能体</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background: linear-gradient(135deg, #0f0c29, #1a1a3e, #24243e); min-height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .bg-particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+        .bg-particles .orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.15; animation: float 8s ease-in-out infinite; }
+        .orb-1 { width: 300px; height: 300px; background: #6366f1; top: 10%; left: 15%; animation-delay: 0s; }
+        .orb-2 { width: 250px; height: 250px; background: #22c55e; top: 50%; right: 10%; animation-delay: 3s; }
+        .orb-3 { width: 200px; height: 200px; background: #f59e0b; bottom: 10%; left: 25%; animation-delay: 5s; }
+        @keyframes float { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-30px) scale(1.1); } }
+        
+        .container { position: relative; z-index: 1; text-align: center; padding: 40px; }
+        .logo { font-size: 56px; margin-bottom: 8px; animation: pulse 2s ease-in-out infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        .title { font-size: 32px; font-weight: 800; background: linear-gradient(135deg, #a5b4fc, #818cf8, #6366f1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+        .subtitle { font-size: 15px; color: #64748b; margin-bottom: 40px; letter-spacing: 2px; }
+        
+        .cards { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; }
+        .card { background: rgba(30,27,75,0.8); backdrop-filter: blur(20px); border: 1px solid rgba(99,102,241,0.2); border-radius: 20px; padding: 36px 32px; width: 280px; cursor: pointer; transition: all 0.3s; text-decoration: none; position: relative; overflow: hidden; }
+        .card:hover { transform: translateY(-6px); box-shadow: 0 20px 60px rgba(99,102,241,0.2); }
+        .card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 4px; transition: all 0.3s; }
+        .card:hover::before { height: 6px; }
+        .card-admin::before { background: linear-gradient(90deg, #818cf8, #6366f1); }
+        .card-user::before { background: linear-gradient(90deg, #4ade80, #22c55e); }
+        .card-icon { font-size: 48px; margin-bottom: 16px; }
+        .card-title { font-size: 20px; font-weight: 700; color: #e2e8f0; margin-bottom: 8px; }
+        .card-desc { font-size: 13px; color: #64748b; line-height: 1.6; }
+        .card-arrow { margin-top: 16px; font-size: 12px; color: #6366f1; opacity: 0; transform: translateX(-10px); transition: all 0.3s; }
+        .card:hover .card-arrow { opacity: 1; transform: translateX(0); }
+        
+        .footer { position: fixed; bottom: 20px; color: #475569; font-size: 12px; z-index: 1; }
+        
+        @media (max-width: 640px) {
+            .cards { flex-direction: column; align-items: center; }
+            .card { width: 260px; padding: 28px 24px; }
+            .title { font-size: 24px; }
+        }
+    </style>
+</head>
+<body>
+<div class="bg-particles">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+</div>
+<div class="container">
+    <div class="logo">🏥</div>
+    <div class="title">AI 导诊系统</div>
+    <div class="subtitle">医疗问诊智能体</div>
+    <div class="cards">
+        <a href="/user/login" class="card card-user">
+            <div class="card-icon">👤</div>
+            <div class="card-title">用户端</div>
+            <div class="card-desc">AI智能问诊 · 病历查询<br>健康建议 · 柳叶刀文章</div>
+            <div class="card-arrow">进入用户端 →</div>
+        </a>
+        <a href="/admin/login" class="card card-admin">
+            <div class="card-icon">🔐</div>
+            <div class="card-title">管理端</div>
+            <div class="card-desc">数据管理 · 样例库<br>爬虫调度 · 系统监控</div>
+            <div class="card-arrow">进入管理端 →</div>
+        </a>
+    </div>
+</div>
+<div class="footer">AI导诊系统 · 基于质谱AI大模型</div>
+</body>
+</html>

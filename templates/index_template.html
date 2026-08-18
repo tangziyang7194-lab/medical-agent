@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 导诊系统</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:linear-gradient(135deg,#e8f0fe,#f5f3ff);min-height:100vh;color:#333}
+.container{max-width:860px;margin:0 auto;padding:16px}
+.hero{text-align:center;padding:28px 0 16px}
+.logo{font-size:42px}
+.title{font-size:20px;font-weight:700;background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.subtitle{font-size:12px;color:#999;margin-top:2px}
+.btn-group{display:flex;gap:8px;margin-bottom:16px}
+.btn{flex:1;padding:13px;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;text-decoration:none;text-align:center;transition:all .2s}
+.btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;box-shadow:0 4px 12px rgba(102,126,234,.2)}
+.btn-primary:hover{transform:translateY(-1px)}
+.btn-secondary{background:#fff;color:#667eea;border:2px solid #e0d8f0}
+.btn-secondary:hover{border-color:#667eea}
+.pg-card{background:#fff;border-radius:12px;margin-bottom:10px;box-shadow:0 1px 6px rgba(0,0,0,.04);overflow:hidden}
+.pg-header{padding:12px 16px;font-size:15px;font-weight:600;background:linear-gradient(135deg,#f5f3ff,#e8f0fe);color:#333;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.pg-header:hover{opacity:.9}
+.pg-count{font-size:12px;color:#667eea}
+.year-block{border-top:1px solid #f0f0f0}
+.year-header{padding:10px 16px;font-size:14px;font-weight:500;color:#555;cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:#fafafa}
+.dept-list{padding:0 16px 8px 32px;background:#fff}
+.dept-item{display:flex;justify-content:space-between;padding:7px 0;font-size:13px;color:#333;cursor:pointer;border-bottom:1px solid #f8f8f8;transition:all .2s}
+.dept-item:hover{color:#667eea;background:#fafafa;margin:0 -8px;padding:7px 8px;border-radius:4px}
+.dept-count{color:#999;font-size:12px}
+.arrow{transition:transform .2s;font-size:10px;color:#aaa;display:inline-block}
+.arrow.down{transform:rotate(90deg)}
+.empty{text-align:center;padding:40px 20px;color:#ccc;font-size:13px}
+.powered{text-align:center;padding:20px;font-size:11px;color:#ccc}
+.modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:999;justify-content:center;align-items:center;padding:20px}
+.modal-overlay.show{display:flex}
+.modal-box{background:#fff;border-radius:16px;max-width:520px;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 8px 30px rgba(0,0,0,.15)}
+.modal-header{padding:14px 18px;font-size:15px;font-weight:600;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:1}
+.modal-close{width:28px;height:28px;border-radius:50%;border:none;background:rgba(255,255,255,.2);color:#fff;font-size:16px;cursor:pointer}
+.modal-body{padding:14px 18px}
+.modal-case{padding:10px 12px;border:1px solid #f0f0f0;border-radius:8px;margin-bottom:8px;font-size:13px;line-height:1.5}
+.case-diag{font-weight:600;color:#667eea}
+.badge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600}
+.badge-red{background:#fce8e6;color:#d93025}
+.badge-yellow{background:#fef7e0;color:#e37400}
+.badge-green{background:#e6f4ea;color:#1e8e3e}
+.pagination{display:flex;justify-content:center;align-items:center;gap:8px;padding:10px 0}
+.pagination button{background:none;border:1px solid #ddd;border-radius:4px;padding:4px 10px;cursor:pointer;color:#666}
+.pagination button:disabled{opacity:.3}
+.page-info{font-size:13px;color:#666}
+.chat-box{flex-direction:column;gap:12px;max-height:60vh;overflow-y:auto;padding:16px;background:#f8f9fa;border-radius:12px;margin-bottom:12px;display:none}
+.chat-box.active{display:flex}
+.msg{max-width:85%;padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.6;white-space:pre-wrap}
+.msg.bot{background:#fff;color:#333;align-self:flex-start;border-bottom-left-radius:4px}
+.msg.user{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.chat-input{display:none;gap:8px;padding:8px 0}
+.chat-input.active{display:flex}
+.chat-input textarea{flex:1;border:1.5px solid #e0e0e0;border-radius:20px;padding:10px 16px;font-size:14px;resize:none;outline:none;font-family:inherit;max-height:60px}
+.chat-input textarea:focus{border-color:#667eea}
+.chat-input .send-btn{width:44px;height:44px;border-radius:50%;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-size:18px;cursor:pointer}
+.typing-dots{display:flex;gap:4px;padding:12px 16px;background:#fff;border-radius:16px;border-bottom-left-radius:4px;align-self:flex-start}
+.typing-dots span{width:8px;height:8px;border-radius:50%;background:#ccc;animation:typing 1.4s infinite}
+.typing-dots span:nth-child(2){animation-delay:.2s}
+.typing-dots span:nth-child(3){animation-delay:.4s}
+@keyframes typing{0%,60%,100%{opacity:.3;transform:scale(.8)}30%{opacity:1;transform:scale(1)}}
+.chat-header{display:none;align-items:center;gap:8px;padding:0 0 12px}
+.chat-header.active{display:flex}
+.chat-header .back-btn{width:32px;height:32px;border-radius:50%;border:none;background:rgba(102,126,234,.15);color:#667eea;cursor:pointer;font-size:16px}
+.chat-header .title{font-size:15px;font-weight:600;color:#667eea;flex:1}
+.report-btn{display:block;width:100%;padding:14px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;text-align:center;text-decoration:none;display:none}
+.report-btn.show{display:block}
+.quick-btns{display:flex;flex-direction:column;gap:6px;padding:8px 0}
+.quick-btns button{padding:10px;border:1.5px solid #e0d8f0;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;transition:all .2s;color:#555}
+.quick-btns button:hover{border-color:#667eea;background:#f5f3ff;color:#667eea}
+.tab-bar{display:flex;gap:0;margin-bottom:12px;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.tab-btn{flex:1;padding:10px;text-align:center;cursor:pointer;font-size:13px;font-weight:500;border:none;background:#fff;color:#999;transition:all .2s}
+.tab-btn.active{background:#667eea;color:#fff}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.hidden{display:none}
+
+/* ====== 右侧向量搜索面板 ====== */
+.home-layout { display: flex; gap: 16px; align-items: flex-start; }
+.home-left { flex: 1; min-width: 0; }
+.home-right {
+  width: 280px; flex-shrink: 0;
+  background: linear-gradient(135deg, #0f0c29, #1a1a3e);
+  border-radius: 14px; padding: 16px; color: #e0e0ff;
+  position: sticky; top: 80px; max-height: calc(100vh - 100px);
+  overflow-y: auto; display: none;
+}
+.home-right.visible { display: block; }
+.vsearch-title {
+  font-size: 14px; font-weight: 700; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 6px;
+}
+.vsearch-title .badge {
+  font-size: 9px; background: rgba(255,255,255,0.1);
+  padding: 1px 6px; border-radius: 4px; color: rgba(255,255,255,0.5);
+}
+.vsearch-input {
+  display: flex; gap: 6px; margin-bottom: 12px;
+}
+.vsearch-input input {
+  flex: 1; padding: 8px 10px; border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px; font-size: 12px; background: rgba(255,255,255,0.06);
+  color: #e0e0ff; outline: none;
+}
+.vsearch-input input:focus { border-color: #667eea; }
+.vsearch-input input::placeholder { color: rgba(255,255,255,0.3); }
+.vsearch-input button {
+  padding: 8px 12px; background: linear-gradient(135deg,#667eea,#764ba2);
+  border: none; border-radius: 8px; color: white; cursor: pointer;
+  font-size: 12px; white-space: nowrap;
+}
+.vsearch-input button:hover { opacity: 0.9; }
+.vsearch-input button:disabled { opacity: 0.5; cursor: not-allowed; }
+.vsearch-result {
+  margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 8px;
+}
+.vsearch-item {
+  padding: 8px 10px; border-radius: 8px;
+  background: rgba(255,255,255,0.04); margin-bottom: 6px;
+  cursor: pointer; transition: all 0.2s;
+}
+.vsearch-item:hover { background: rgba(255,255,255,0.08); }
+.vs-item-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 3px;
+}
+.vs-dept {
+  font-size: 10px; padding: 1px 6px; border-radius: 3px;
+  background: rgba(102,126,234,0.3); color: #a5b4fc;
+}
+.vs-sim {
+  font-size: 10px; color: rgba(255,255,255,0.5);
+}
+.vs-symp {
+  font-size: 11px; color: rgba(255,255,255,0.7);
+  line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical; overflow: hidden;
+}
+.vs-diag {
+  font-size: 10px; color: #4ade80; margin-top: 2px;
+}
+.vsearch-empty {
+  text-align: center; padding: 20px; font-size: 12px;
+  color: rgba(255,255,255,0.3);
+}
+.vsearch-tip {
+  font-size: 10px; color: rgba(255,255,255,0.25);
+  text-align: center; margin-top: 8px;
+}
+@media (max-width: 800px) {
+  .home-layout { flex-direction: column; }
+  .home-right { width: 100%; position: static; max-height: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="container" id="pageHome">
+  <div class="home-layout">
+    <div class="home-left">
+  <div class="hero">
+    <div class="logo">🏥</div>
+    <div class="title">AI 导诊系统</div>
+    <div class="subtitle" id="caseCount">样例库 0 例</div>
+  </div>
+  <div class="btn-group">
+    <button class="btn btn-primary" onclick="showChat()">💬 开始问诊</button>
+    <button class="btn btn-secondary" onclick="showRecords()">📋 病历记录</button>
+    <a href="/admin/login" class="btn btn-secondary" style="font-size:12px;padding:8px 14px;text-decoration:none;">🔐 管理端</a> 
+    
+        <a href="/health_tips" class="btn btn-secondary" style="font-size:12px;padding:8px 14px;text-decoration:none;">🌿 健康建议</a>
+  </div>
+  <div id="deptList"></div>
+  <div class="powered">Powered by GLM-4.5 · 纯前端驱动</div>
+    </div>
+    <!-- 右侧向量搜索面板 -->
+    <div class="home-right" id="vsearchPanel">
+      <div class="vsearch-title">
+        🧠 向量语义搜索
+        <span class="badge">ChromaDB</span>
+      </div>
+      <div class="vsearch-input">
+        <input type="text" id="vsearchQuery" placeholder="输入症状，如：头痛发烧..."
+               onkeyup="if(event.key==='Enter')vectorSearch()">
+        <button id="vsearchBtn" onclick="vectorSearch()">🔍 搜索</button>
+      </div>
+      <div id="vsearchResults">
+        <div class="vsearch-empty">输入症状关键词，语义检索相似病例</div>
+      </div>
+      <div class="vsearch-tip" id="vsearchStatus"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 对话页 -->
+<div class="container hidden" id="pageChat">
+  <div class="chat-header active">
+    <button class="back-btn" onclick="showHome()">←</button>
+    <span class="title">💬 AI 问诊</span>
+    <span style="font-size:11px;color:#999;">GLM-4.5</span>
+  </div>
+  <div class="chat-box" id="chatBox"></div>
+  <div class="chat-input" id="chatInput">
+    <textarea id="msgInput" rows="1" placeholder="描述症状..." onkeydown="if(event.key=='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}"></textarea>
+    <button class="send-btn" id="sendBtn" onclick="sendMsg()">↵</button>
+  </div>
+</div>
+
+<!-- 病历页 -->
+<div class="container hidden" id="pageRecords">
+  <div class="chat-header active">
+    <button class="back-btn" onclick="showHome()">←</button>
+    <span class="title">📋 病历中心</span>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchRecTab('patients')">👤 患者记录</button>
+    <button class="tab-btn" onclick="switchRecTab('samples')">📂 样例库 (<span id="sampleCount">0</span>例)</button>
+  </div>
+  <div id="tab-patients" class="tab-content active"></div>
+  <div id="tab-samples" class="tab-content"></div>
+  <div class="powered">数据存储在浏览器本地</div>
+</div>
+
+<!-- 弹窗 -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span id="modalTitle">🏥 科室详情</span>
+      <span id="modalCount" style="font-size:12px;opacity:.8"></span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+// ====== 数据层（从MySQL获取） ======
+let allCases = [];
+
+function loadCases() {
+  fetch('/api/cases')
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) { console.error(data.error); return; }
+      allCases = data;
+      renderHome();
+      renderRecords();
+    })
+    .catch(err => {
+      console.error('加载病例失败:', err);
+      // fallback: 使用内置数据
+      allCases = FALLBACK_CASES;
+      renderHome();
+      renderRecords();
+    });
+}
+
+// 备用数据（API不可用时）
+const FALLBACK_CASES = [
+  {id:1,dept:"消化内科",severity:"green",diagnosis:"慢性胃炎",symptom:"患者上腹隐痛反复发作2年，饭后饱胀，反酸嗳气，伴有食欲不振"},
+  {id:2,dept:"消化内科",severity:"green",diagnosis:"慢性胆囊炎",symptom:"右上腹隐痛半年，进食油腻后加重，有时放射至右肩背"},
+  {id:3,dept:"消化内科",severity:"yellow",diagnosis:"胃食管反流病",symptom:"胸骨后烧灼感3个月，反酸，夜间平卧加重，伴有慢性咳嗽"},
+  {id:4,dept:"神经内科",severity:"yellow",diagnosis:"偏头痛",symptom:"反复发作性头痛5年，左额颞部跳痛，伴恶心呕吐，畏光畏声"},
+  {id:5,dept:"神经内科",severity:"green",diagnosis:"紧张性头痛",symptom:"全头压迫性头痛3个月，颈肩部僵硬，精神紧张时加重"},
+  {id:6,dept:"神经内科",severity:"red",diagnosis:"脑卒中",symptom:"突发右侧肢体无力2小时，言语含糊，口角歪斜，意识模糊"},
+  {id:7,dept:"内分泌科",severity:"yellow",diagnosis:"甲状腺功能亢进",symptom:"心慌手抖3个月，消瘦怕热多汗，失眠焦虑，食量增大"},
+  {id:8,dept:"内分泌科",severity:"green",diagnosis:"糖尿病",symptom:"多饮多尿多食1年，体重减轻，视物模糊，乏力"},
+  {id:9,dept:"内分泌科",severity:"green",diagnosis:"桥本甲状腺炎",symptom:"颈部增粗半年，乏力怕冷，记忆力减退，皮肤干燥"},
+  {id:10,dept:"呼吸内科",severity:"green",diagnosis:"上呼吸道感染",symptom:"流涕打喷嚏3天，咽痛咳嗽，低热37.5℃，全身乏力"},
+  {id:11,dept:"呼吸内科",severity:"yellow",diagnosis:"肺炎",symptom:"发热咳嗽1周，咳黄痰，胸痛气促，最高体温39℃"},
+  {id:12,dept:"呼吸内科",severity:"yellow",diagnosis:"支气管哮喘",symptom:"反复发作性喘息5年，夜间加重，接触花粉后诱发"},
+  {id:13,dept:"心血管内科",severity:"red",diagnosis:"急性心肌梗死",symptom:"突发胸骨后压榨样疼痛1小时，向左肩放射，大汗淋漓"},
+  {id:14,dept:"心血管内科",severity:"yellow",diagnosis:"高血压",symptom:"头晕头痛反复半年，血压波动160/100，心悸"},
+  {id:15,dept:"骨科",severity:"green",diagnosis:"颈椎病",symptom:"颈肩部酸痛半年，手指麻木，转头时头晕加重"},
+  {id:16,dept:"骨科",severity:"yellow",diagnosis:"腰椎间盘突出",symptom:"腰痛伴右下肢放射痛2个月，弯腰加重，活动受限"},
+  {id:17,dept:"皮肤科",severity:"green",diagnosis:"湿疹",symptom:"双肘窝丘疹瘙痒反复2年，皮肤增厚，冬季加重"},
+  {id:18,dept:"皮肤科",severity:"yellow",diagnosis:"带状疱疹",symptom:"右侧胸背部簇集性水疱3天，剧烈刺痛，夜间难眠"},
+  {id:19,dept:"眼科",severity:"green",diagnosis:"结膜炎",symptom:"双眼发红瘙痒2天，分泌物增多，畏光流泪"},
+  {id:20,dept:"耳鼻喉科",severity:"green",diagnosis:"过敏性鼻炎",symptom:"阵发性打喷嚏流清涕1年，鼻塞鼻痒，季节性发作"},
+  {id:21,dept:"耳鼻喉科",severity:"yellow",diagnosis:"急性中耳炎",symptom:"右耳疼痛3天，听力下降，耳闷胀感，发热38℃"},
+  {id:22,dept:"泌尿外科",severity:"green",diagnosis:"尿路感染",symptom:"尿频尿急尿痛2天，小腹坠胀，尿液浑浊"},
+  {id:23,dept:"普外科",severity:"red",diagnosis:"急性阑尾炎",symptom:"转移性右下腹痛6小时，发热38.5℃，恶心呕吐"},
+  {id:24,dept:"普外科",severity:"yellow",diagnosis:"胆囊结石",symptom:"右上腹阵发性绞痛反复1年，进食后发作，伴恶心"},
+  {id:25,dept:"妇产科",severity:"green",diagnosis:"月经不调",symptom:"月经周期紊乱3个月，经量少，色暗有血块，痛经"},
+];
+
+// ====== 初始化 ======
+(function init() {
+  loadCases();
+})();
+
+// ====== 渲染首页 ======
+function renderHome() {
+  const cases = allCases;
+  document.getElementById('caseCount').textContent = `样例库 ${cases.length} 例`;
+
+  // 按科室分组
+  let groups = {};
+  cases.forEach(c => {
+    let dept = c.dept || '未知';
+    if (!groups[dept]) groups[dept] = [];
+    groups[dept].push(c);
+  });
+
+  // 排序
+  let sorted = Object.entries(groups).sort((a,b) => b[1].length - a[1].length);
+
+  let html = `<p style="font-size:12px;color:#999;margin-bottom:10px;">共 ${cases.length} 例，覆盖 ${sorted.length} 个科室</p>`;
+  html += `<div class="pg-card"><div class="pg-header" onclick="toggleNext(this)"><span>📂 项目组1</span><span class="pg-count">${cases.length}例 <span class="arrow down">▶</span></span></div><div class="year-block"><div><div class="year-header" onclick="toggleNext(this)"><span>📅 2026年</span><span class="arrow down">▶</span></div><div class="dept-list">`;
+
+  sorted.forEach(([dept, items]) => {
+    html += `<div class="dept-item" onclick='showCaseModal(${JSON.stringify(JSON.stringify(items))}, ${JSON.stringify(dept)})'>
+      <span>🏥 ${dept}</span>
+      <span class="dept-count">${items.length}例 ›</span>
+    </div>`;
+  });
+
+  html += `</div></div></div></div>`;
+  document.getElementById('deptList').innerHTML = html;
+}
+
+// ====== 弹窗 ======
+function showCaseModal(itemsJson, deptName) {
+  let items = JSON.parse(itemsJson);
+  document.getElementById('modalTitle').textContent = '🏥 ' + deptName;
+  document.getElementById('modalCount').textContent = items.length + '例';
+  let body = document.getElementById('modalBody');
+  const pageSize = 20;
+  let page = 1, totalPages = Math.ceil(items.length / pageSize);
+
+  function renderPage(p) {
+    page = p;
+    let start = (p-1)*pageSize, end = Math.min(start+pageSize, items.length);
+    let html = '';
+    for (let i = start; i < end; i++) {
+      let c = items[i];
+      let sevClass = c.severity === 'red' ? 'badge-red' : c.severity === 'yellow' ? 'badge-yellow' : 'badge-green';
+      html += `<div class="modal-case">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div><span class="case-diag">🩺 ${c.diagnosis||'待诊断'}</span>
+          <span class="badge ${sevClass}">${c.severity||'green'}</span></div>
+        </div>
+        <div style="color:#555;margin:4px 0;font-size:13px;">📝 ${c.symptom||'无描述'}</div>
+        <div style="font-size:11px;color:#999;">🔗 ${c.source||'AI生成'}  ID: ${c.id}</div>
+        <button onclick="event.stopPropagation();analyzeSampleCase(${c.id},this)" style="background:none;border:1px solid #667eea;color:#667eea;border-radius:6px;padding:2px 10px;font-size:11px;cursor:pointer;margin-top:4px;">🤖 AI分析</button>
+        <div id="ai-${c.id}" style="display:none;margin-top:8px;"></div>
+      </div>`;
+    }
+    if (totalPages > 1) {
+      html += `<div class="pagination">
+        <button onclick="renderPage(${page-1})" ${page<=1?'disabled':''}>‹</button>
+        <span class="page-info">第 ${page} / ${totalPages} 页</span>
+        <button onclick="renderPage(${page+1})" ${page>=totalPages?'disabled':''}>›</button>
+      </div>`;
+    }
+    body.innerHTML = html;
+  }
+  renderPage(1);
+  window.renderPage = renderPage;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+const _aiCache = {};
+function analyzeSampleCase(id,btn){
+  var el=document.getElementById('ai-'+id);
+  if(!el)return;
+  if(el.style.display==='block'){el.style.display='none';btn.textContent='🤖 AI分析';return;}
+  if(_aiCache[id]){el.innerHTML=_aiCache[id];el.style.display='block';btn.textContent='🤖 收起';return;}
+  var c=null;
+  for(var i=0;i<allCases.length;i++){if(allCases[i].id===id){c=allCases[i];break;}}
+  if(!c){el.innerHTML='<div style=font-size:12px;color:#999;>未找到数据</div>';el.style.display='block';return;}
+  btn.textContent='⏳...';btn.disabled=true;
+  fetch('/api/report/ai_analysis',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({symptom:c.symptom,patient:{}})
+  }).then(function(r){return r.json()}).then(function(resp){
+    btn.disabled=false;
+    if(!resp.success){el.innerHTML='<div style=font-size:12px;color:#d93025;>分析失败</div>';el.style.display='block';return;}
+    var d=resp.data;
+    var h='<div style=background:linear-gradient(135deg,#0f0c29,#1a1a3e);border-radius:10px;padding:12px 14px;font-size:12px;color:#e0e0ff;>';
+    h+='<div style=display:flex;align-items:center;gap:8px;margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:8px;>';
+    h+='<span style=background:linear-gradient(135deg,#667eea,#764ba2);border-radius:6px;padding:2px 8px;font-size:10px;color:white;>🧬 质谱AI</span>';
+    h+='<span style=font-size:11px;color:rgba(255,255,255,0.6);>'+d.department+'</span>';
+    var si=d.severity==='red'?'🔴':d.severity==='yellow'?'🟡':'🟢';
+    h+='<span style=font-size:11px;color:rgba(255,255,255,0.6);>'+si+' '+d.triage+'</span></div>';
+    if(d.diseases&&d.diseases.length>0){
+      h+='<div style=margin-bottom:8px;><div style=font-size:10px;font-weight:600;color:#a78bfa;margin-bottom:4px;>📊 疾病可能性</div>';
+      for(var i=0;i<d.diseases.length;i++){
+        var ds=d.diseases[i];var bc=ds.probability>=60?'#ef4444':ds.probability>=30?'#667eea':'#4ade80';
+        h+='<div style=display:flex;align-items:center;gap:6px;margin:3px 0;>';
+        h+='<span style=width:48px;text-align:right;font-size:11px;color:rgba(255,255,255,0.8);flex-shrink:0;>'+ds.name+'</span>';
+        h+='<div style=flex:1;height:14px;background:rgba(255,255,255,0.08);border-radius:7px;overflow:hidden;>';
+        h+='<div class=ai-bar style=height:100%;width:'+ds.probability+'%;background:'+bc+';border-radius:7px;transition:width 0.8s ease;></div></div>';
+        h+='<span style=font-size:11px;font-weight:600;color:white;width:28px;text-align:right;>'+ds.probability+'%</span></div>'
+      }h+='</div>'
+    }
+    var kn=d.knowledge||{};
+    if(kn.suggested_exams||kn.advice){
+      h+='<div style=display:flex;flex-wrap:wrap;gap:6px;>';
+      if(kn.suggested_exams&&kn.suggested_exams.length>0){
+        h+='<div style=flex:1;min-width:120px;background:rgba(255,255,255,0.06);border-radius:6px;padding:8px;>';
+        h+='<div style=font-size:10px;color:#ef4444;margin-bottom:3px;>🔬 建议检查</div>';
+        for(var i=0;i<kn.suggested_exams.length;i++){
+          h+='<span style=background:#dc2626;padding:3px 8px;border-radius:4px;font-size:11px;color:#ffffff;font-weight:600;>'+kn.suggested_exams[i]+'</span>';
+        }h+='</div></div>'
+      }
+      if(kn.advice){
+        h+='<div style=flex:2;min-width:150px;background:rgba(255,255,255,0.06);border-radius:6px;padding:8px;>';
+        h+='<div style=font-size:10px;color:#22c55e;margin-bottom:3px;>💊 处理建议</div>';
+        h+='<div style=font-size:11px;color:rgba(255,255,255,0.8);line-height:1.4;>'+kn.advice+'</div></div>'
+      }h+='</div>'
+    }
+    h+='<div style=margin-top:6px;font-size:9px;color:rgba(255,255,255,0.25);text-align:center;>质谱AI分析 · 仅供临床参考</div></div>';
+    _aiCache[id]=h;el.innerHTML=h;el.style.display='block';btn.textContent='🤖 收起';
+    setTimeout(function(){var bars=el.querySelectorAll('.ai-bar');for(var i=0;i<bars.length;i++){(function(bar){var w=bar.style.width;bar.style.width='0%';setTimeout(function(){bar.style.width=w;},50)})(bars[i]);}},200);
+  }).catch(function(err){btn.disabled=false;el.innerHTML='<div style=font-size:12px;color:#d93025;>网络错误</div>';el.style.display='block';btn.textContent='🤖 AI分析';});
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('show');
+}
+
+// ====== 页面切换 ======
+function showHome() { hideAll(); document.getElementById('pageHome').classList.remove('hidden'); renderHome(); }
+function showChat() { hideAll(); document.getElementById('pageChat').classList.remove('hidden'); initChat(); }
+function showRecords() { hideAll(); document.getElementById('pageRecords').classList.remove('hidden'); renderRecords(); }
+function hideAll() { ['pageHome','pageChat','pageRecords'].forEach(id => document.getElementById(id).classList.add('hidden')); }
+
+function toggleNext(el) {
+  let next = el.nextElementSibling;
+  let arrow = el.querySelector('.arrow');
+  if (next) {
+    next.style.display = next.style.display === 'none' ? 'block' : 'none';
+    if (arrow) arrow.classList.toggle('down');
+  }
+}
+
+// ====== 对话问诊 ======
+const API_KEY = "6a1e93131a994ae0858753c106c44d5f.jFV5aOGklphXbL87";
+const API_URL = "https://open.bigmodel.cn/api/paas/v4/chat/completions";
+
+let chatMessages = [];
+
+function initChat() {
+  chatMessages = [];
+  document.getElementById('chatBox').innerHTML = '';
+  document.getElementById('chatBox').classList.add('active');
+  document.getElementById('chatInput').classList.add('active');
+  addMsg('您好！我是AI导诊助手👨‍⚕️\n\n请告诉我您哪里不舒服？', 'bot');
+
+  // 快捷按钮
+  let btns = document.createElement('div');
+  btns.className = 'quick-btns';
+  btns.id = 'quickBtns';
+  ['最近头痛，太阳穴跳痛','肚子痛，有点发烧','心慌手抖，消瘦怕热','咳嗽有痰，胸闷气短'].forEach(s => {
+    let b = document.createElement('button');
+    b.textContent = '💬 ' + s;
+    b.onclick = () => { document.getElementById('quickBtns')?.remove(); document.getElementById('msgInput').value = s; sendMsg(); };
+    btns.appendChild(b);
+  });
+  document.getElementById('chatBox').appendChild(btns);
+}
+
+function addMsg(text, role) {
+  let div = document.createElement('div');
+  div.className = 'msg ' + role;
+  div.textContent = text;
+  document.getElementById('chatBox').appendChild(div);
+  document.getElementById('chatBox').scrollTop = document.getElementById('chatBox').scrollHeight;
+}
+
+function showTyping() {
+  let div = document.createElement('div');
+  div.className = 'typing-dots';
+  div.id = 'typingIndicator';
+  div.innerHTML = '<span></span><span></span><span></span>';
+  document.getElementById('chatBox').appendChild(div);
+  document.getElementById('chatBox').scrollTop = document.getElementById('chatBox').scrollHeight;
+}
+
+function hideTyping() {
+  let el = document.getElementById('typingIndicator');
+  if (el) el.remove();
+}
+
+function sendMsg() {
+  let input = document.getElementById('msgInput');
+  let text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  document.getElementById('quickBtns')?.remove();
+
+  addMsg(text, 'user');
+  chatMessages.push({role:'user', content:text});
+  document.getElementById('sendBtn').disabled = true;
+  showTyping();
+
+  let userTurns = chatMessages.filter(m => m.role === 'user').length;
+
+  // 对话系统提示
+  let systemMsg = {
+    role: 'system',
+    content: '你是一位资深主治医师，正在在线问诊。语气温和专业，每次回复不超过150字，每次只问1-2个问题。当收集到足够信息（至少3轮对话后）可以给出诊断建议时，在回复末尾添加【READY】标记。'
+  };
+
+  let payload = {
+    model: 'glm-4-plus',
+    messages: [systemMsg, ...chatMessages],
+    temperature: 0.7,
+    max_tokens: 1024
+  };
+
+  fetch(API_URL, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json', 'Authorization':'Bearer ' + API_KEY},
+    body: JSON.stringify(payload)
+  })
+  .then(r => r.json())
+  .then(data => {
+    hideTyping();
+    document.getElementById('sendBtn').disabled = false;
+    let reply = data.choices?.[0]?.message?.content || '抱歉，暂时无法回复。';
+    let isReady = reply.includes('【READY】') && userTurns >= 3;
+    let clean = reply.replace('【READY】','').trim();
+    addMsg(clean, 'bot');
+    chatMessages.push({role:'assistant', content: clean});
+
+    if (isReady) {
+      // 显示查看报告按钮
+      let reportBtn = document.createElement('a');
+      reportBtn.href = '#';
+      reportBtn.className = 'report-btn show';
+      reportBtn.textContent = '📋 查看诊断报告 →';
+      reportBtn.onclick = function(e) {
+        e.preventDefault();
+        let symptomText = chatMessages.filter(m=>m.role==='user').map(m=>m.content).join(', ');
+        let report = generateReport(symptomText, chatMessages.slice(-1)[0]?.content||'');
+        saveRecord(report);
+        showRecords();
+      };
+      document.getElementById('chatBox').appendChild(reportBtn);
+      document.getElementById('chatInput').classList.remove('active');
+    }
+  })
+  .catch(err => {
+    hideTyping();
+    document.getElementById('sendBtn').disabled = false;
+    addMsg('网络错误，请重试。', 'bot');
+  });
+}
+
+function generateReport(symptomText, diagnosis) {
+  let dept = '内科';
+  if (symptomText.includes('头痛')) dept = '神经内科';
+  else if (symptomText.includes('心慌')||symptomText.includes('手抖')) dept = '内分泌科';
+  else if (symptomText.includes('咳嗽')||symptomText.includes('痰')) dept = '呼吸内科';
+  else if (symptomText.includes('肚子痛')||symptomText.includes('胃')) dept = '消化内科';
+  else if (symptomText.includes('胸痛')||symptomText.includes('胸闷')) dept = '心血管内科';
+
+  let now = new Date();
+  let dateStr = now.toLocaleString('zh-CN');
+  return `============================================================
+  AI 医疗诊断报告
+============================================================
+  就诊日期: ${dateStr}
+  患者: 在线咨询
+  建议科室: ${dept}
+  严重度: YELLOW
+  分诊等级: 二级医院
+------------------------------------------------------------
+  主诉: ${symptomText}
+  诊断结论: ${diagnosis||'建议进一步检查'}
+------------------------------------------------------------
+  处理建议: 建议前往${dept}就诊，完善相关检查。
+  本报告由AI导诊系统自动生成，仅供参考。`;
+}
+
+function saveRecord(report) {
+  let data = getData();
+  if (!data.patients) data.patients = [];
+  data.patients.push({
+    id: Date.now(),
+    surname: '在线',
+    gender: '咨询',
+    time: new Date().toLocaleString('zh-CN'),
+    report: report,
+    diagnosis: report.match(/诊断结论: (.+)/)?.[1] || '',
+    dept: report.match(/建议科室: (.+)/)?.[1] || ''
+  });
+  saveData(data);
+}
+
+// ====== 病历页 ======
+function switchRecTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(el => { if(el.textContent.includes(name==='patients'?'患者':'样例')) el.classList.add('active'); });
+}
+
+function renderRecords() {
+  let patients = []; // 从localStorage读取患者记录（如有）
+  try {
+    let stored = JSON.parse(localStorage.getItem('medical_patients')) || [];
+    patients = stored;
+  } catch(e) {}
+  const cases = allCases;
+  document.getElementById('sampleCount').textContent = cases.length;
+
+  // 患者记录
+  let pHtml = patients.length === 0 ? '<div class="empty">暂无问诊记录</div>' : '';
+  patients.forEach(p => {
+    pHtml += `<div class="pg-card" style="padding:14px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+        <strong>👤 ${p.surname}（${p.gender}）</strong>
+        <span style="font-size:11px;color:#999;">${p.time}</span>
+      </div>
+      <div style="font-size:13px;color:#555;margin:4px 0;">🏥 ${p.dept||'未知科室'}</div>
+      <div style="font-size:12px;color:#666;white-space:pre-wrap;max-height:100px;overflow-y:auto;">${p.report?.substring(0,200)||'无'}</div>
+    </div>`;
+  });
+  document.getElementById('tab-patients').innerHTML = pHtml;
+
+  // 样例库
+  let groups = {};
+  cases.forEach(c => {
+    let dept = c.dept || '未知';
+    if (!groups[dept]) groups[dept] = [];
+    groups[dept].push(c);
+  });
+  let sorted = Object.entries(groups).sort((a,b) => b[1].length - a[1].length);
+
+  let sHtml = '';
+  sorted.forEach(([dept, items]) => {
+    sHtml += `<div class="pg-card"><div class="pg-header" onclick="toggleNext(this)"><span>🏥 ${dept}</span><span class="pg-count">${items.length}例 <span class="arrow down">▶</span></span></div>
+    <div class="year-block">`;
+    items.slice(0,5).forEach(c => {
+      let sevClass = c.severity === 'red' ? 'badge-red' : c.severity === 'yellow' ? 'badge-yellow' : 'badge-green';
+      sHtml += `<div class="modal-case" style="margin:4px 8px;">
+        <div style="display:flex;justify-content:space-between;">
+          <span class="case-diag">🩺 ${c.diagnosis||'待诊断'}</span>
+          <span class="badge ${sevClass}">${c.severity||'green'}</span>
+        </div>
+        <div style="color:#666;font-size:12px;">📝 ${(c.symptom||'').substring(0,60)}...</div>
+      </div>`;
+    });
+    if (items.length > 5) sHtml += `<div style="text-align:center;padding:6px;font-size:12px;color:#667eea;cursor:pointer;" onclick='showCaseModal(${JSON.stringify(JSON.stringify(items))}, ${JSON.stringify(dept)})'>查看全部 ${items.length} 例 →</div>`;
+    sHtml += `</div></div>`;
+  });
+  if (!sHtml) sHtml = '<div class="empty">暂无样例数据</div>';
+  document.getElementById('tab-samples').innerHTML = sHtml;
+}
+
+// ====== 切页 ======
+// 修正 showCaseModal 调用转义
+document.querySelectorAll('.dept-item').forEach(el => {});
+
+// ====== 向量语义搜索 ======
+let vsearchTimer = null;
+function vectorSearch() {
+  var q = document.getElementById('vsearchQuery').value.trim();
+  if (!q) return;
+  var btn = document.getElementById('vsearchBtn');
+  var results = document.getElementById('vsearchResults');
+  var status = document.getElementById('vsearchStatus');
+  var panel = document.getElementById('vsearchPanel');
+  panel.classList.add('visible');
+  btn.disabled = true; btn.textContent = '⏳';
+  results.innerHTML = '<div class="vsearch-empty">⏳ 正在语义搜索...</div>';
+  status.textContent = '';
+  fetch('/api/vector/search', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({query: q})
+  }).then(function(r){return r.json()}).then(function(data){
+    btn.disabled = false; btn.textContent = '🔍 搜索';
+    if (!data.success || !data.results || data.results.length === 0) {
+      results.innerHTML = '<div class="vsearch-empty">未找到相似病例</div>';
+      status.textContent = '无匹配结果';
+      return;
+    }
+    var html = '';
+    data.results.forEach(function(r, idx){
+      var sim = Math.round(r.similarity * 100);
+      var sevDot = r.severity === 'red' ? '🔴' : r.severity === 'yellow' ? '🟡' : '🟢';
+      var color = sim > 0 ? '#4ade80' : '#999';
+      html += '<div class="vsearch-item" onclick="showCaseDetail(' + idx + ')">';
+      html += '  <div class="vs-item-header">';
+      html += '    <span class="vs-dept">' + (r.department||'未知') + '</span>';
+      html += '    <span class="vs-sim" style="color:' + color + '">' + sim + '%</span>';
+      html += '  </div>';
+      html += '  <div class="vs-symp">' + (r.symptoms||'').substring(0,80) + '</div>';
+      html += '  <div class="vs-diag">' + sevDot + ' ' + (r.diagnosis||'') + '</div>';
+      html += '</div>';
+    });
+    results.innerHTML = html;
+    status.textContent = '找到 ' + data.results.length + ' 条相似病例';
+    // Store results for click handler
+    window._vsearchResults = data.results;
+  }).catch(function(err){
+    btn.disabled = false; btn.textContent = '🔍 搜索';
+    results.innerHTML = '<div class="vsearch-empty">搜索失败，请重试</div>';
+    status.textContent = '网络错误';
+  });
+}
+
+function showCaseDetail(idx) {
+  var results = window._vsearchResults;
+  if (!results || !results[idx]) return;
+  var r = results[idx];
+  var sevDot = r.severity === 'red' ? '🔴' : r.severity === 'yellow' ? '🟡' : '🟢';
+  var html = '<div style="background:linear-gradient(135deg,#0f0c29,#1a1a3e);border-radius:12px;padding:16px;color:#e0e0ff;">';
+  html += '<div style="display:flex;justify-content:space-between;margin-bottom:8px;">';
+  html += '<span style="font-weight:600;">' + sevDot + ' ' + (r.diagnosis||'') + '</span>';
+  html += '<span style="font-size:11px;background:rgba(102,126,234,0.3);padding:1px 8px;border-radius:4px;">' + (r.department||'') + '</span></div>';
+  html += '<div style="font-size:12px;line-height:1.5;color:rgba(255,255,255,0.7);">' + (r.symptoms||'') + '</div>';
+  html += '<div style="margin-top:8px;font-size:10px;color:rgba(255,255,255,0.3);">相似度: ' + Math.round(r.similarity*100) + '% | 来源: ' + (r.source||'AI生成') + '</div>';
+  html += '</div>';
+  document.getElementById('vsearchResults').innerHTML = html;
+  document.getElementById('vsearchStatus').textContent = '点击空白处关闭详情';
+  // Auto close after 3 seconds
+  setTimeout(function(){
+    vectorSearch();
+  }, 5000);
+}
+
+// Show vector search panel on page load
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('vsearchPanel').classList.add('visible');
+});
+</script>
+<div id="userBar" style="position:fixed;bottom:16px;right:16px;z-index:999;display:none;">
+    <span style="color:#818cf8;font-size:12px;margin-right:8px;" id="userName"></span>
+    <a href="/user/logout" style="padding:6px 14px;background:rgba(239,68,68,0.2);color:#fca5a5;border-radius:8px;font-size:12px;text-decoration:none;">🚪 退出登录</a>
+</div>
+<script>
+fetch("/api/user/status").then(function(r){return r.json()}).then(function(d){
+    if(d.logged_in){
+        document.getElementById("userBar").style.display="";
+        document.getElementById("userName").textContent=d.username;
+    }
+});
+</script>
+
+</body>
+</html>

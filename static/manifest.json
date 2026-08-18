@@ -1,0 +1,14 @@
+{
+  "name": "AI导诊系统",
+  "short_name": "AI导诊",
+  "description": "GLM-4.5智能导诊 · 在线问诊 · 病历管理",
+  "start_url": "/mobile",
+  "display": "standalone",
+  "background_color": "#f5f3ff",
+  "theme_color": "#667eea",
+  "orientation": "portrait",
+  "icons": [
+    {"src": "/static/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "/static/icon-512.png", "sizes": "512x512", "type": "image/png"}
+  ]
+}

@@ -1,0 +1,436 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>诊断报告 - AI智能导诊</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #e8f0fe 0%, #f5f3ff 100%);
+            min-height: 100vh; color: #333;
+        }
+        .container { max-width: 720px; margin: 0 auto; padding: 20px; }
+        .header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white; padding: 24px 20px; border-radius: 16px;
+            margin-bottom: 20px; box-shadow: 0 4px 20px rgba(102,126,234,0.3);
+            text-align: center;
+        }
+        .header h2 { font-size: 20px; margin-bottom: 4px; }
+        .header .sub { font-size: 13px; opacity: 0.9; }
+        .header .badge {
+            display: inline-block; background: rgba(255,255,255,0.2);
+            padding: 2px 10px; border-radius: 10px; font-size: 11px;
+            margin-top: 6px;
+        }
+        .card {
+            background: white; border-radius: 12px; padding: 24px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 16px;
+        }
+        .card-title {
+            font-size: 15px; font-weight: 600; margin-bottom: 12px;
+            padding-bottom: 8px; border-bottom: 2px solid #667eea;
+            color: #333;
+        }
+        .report-content {
+            white-space: pre-wrap; font-family: "Courier New", "Consolas", monospace;
+            font-size: 13px; line-height: 1.7; color: #333;
+            background: #f8f9fa; padding: 20px; border-radius: 8px;
+            border: 1px solid #eee; max-height: 600px; overflow-y: auto;
+        }
+        .action-grid { display: flex; gap: 12px; flex-wrap: wrap; }
+        .action-grid .btn { flex: 1; min-width: 140px; }
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            gap: 6px; padding: 12px 20px; border: none; border-radius: 8px;
+            font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-success { background: #34a853; color: white; }
+        .btn-success:hover { opacity: 0.9; }
+        .btn-outline { background: white; color: #667eea; border: 1.5px solid #667eea; }
+        .btn-outline:hover { background: #f5f3ff; }
+        .patient-summary {
+            background: #f5f3ff; padding: 12px 16px; border-radius: 8px;
+            margin-bottom: 16px; font-size: 14px; line-height: 1.6;
+        }
+        .patient-summary strong { color: #667eea; }
+        .toast {
+            display: none; padding: 12px 16px; border-radius: 8px;
+            margin-bottom: 12px; font-size: 14px; text-align: center;
+        }
+        .toast.success { display: block; background: #e6f4ea; color: #1e8e3e; }
+        .toast.error { display: block; background: #fce8e6; color: #d93025; }
+        .toast.info { display: block; background: #e8f0fe; color: #667eea; }
+        .disclaimer {
+            margin-top: 16px; padding: 12px; background: #fff8e1;
+            border-radius: 8px; font-size: 12px; color: #666; line-height: 1.5;
+            border-left: 3px solid #f9a825;
+        }
+        .footer { text-align: center; padding: 20px; color: #aaa; font-size: 12px; }
+
+        /* ====== 质谱AI分析卡片样式 ====== */
+        .ai-card {
+            background: linear-gradient(135deg, #0f0c29, #1a1a3e, #24243e);
+            border-radius: 16px; padding: 24px; margin-bottom: 16px;
+            color: #e0e0ff; box-shadow: 0 8px 32px rgba(15,12,41,0.3);
+            overflow: hidden;
+        }
+        .ai-header {
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 20px; padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .ai-logo {
+            width: 42px; height: 42px; border-radius: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; flex-shrink: 0;
+        }
+        .ai-title {
+            font-size: 17px; font-weight: 700; color: white;
+        }
+        .ai-subtitle {
+            font-size: 11px; color: rgba(255,255,255,0.5);
+            margin-top: 2px;
+        }
+        .ai-badge-row {
+            display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;
+        }
+        .ai-badge {
+            display: flex; align-items: center; gap: 4px;
+            padding: 6px 12px; border-radius: 20px; font-size: 12px;
+            font-weight: 500; background: rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.85);
+        }
+        .ai-badge .dot {
+            width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+        }
+        .dot-green { background: #4ade80; }
+        .dot-yellow { background: #fbbf24; }
+        .dot-red { background: #f87171; }
+
+        .ai-section-title {
+            font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.6);
+            text-transform: uppercase; letter-spacing: 1px;
+            margin: 16px 0 10px;
+        }
+        .ai-disease-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .ai-disease-name {
+            width: 90px; font-size: 13px; font-weight: 500;
+            color: rgba(255,255,255,0.9); text-align: right; flex-shrink: 0;
+        }
+        .ai-bar-bg {
+            flex: 1; height: 18px; background: rgba(255,255,255,0.08);
+            border-radius: 9px; overflow: hidden; position: relative;
+        }
+        .ai-bar-fill {
+            height: 100%; border-radius: 9px; transition: width 1.2s ease;
+            background: linear-gradient(90deg, #667eea, #a78bfa);
+        }
+        .ai-bar-high {
+            background: linear-gradient(90deg, #f59e0b, #ef4444);
+        }
+        .ai-bar-mid {
+            background: linear-gradient(90deg, #3b82f6, #667eea);
+        }
+        .ai-bar-value {
+            position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+            font-size: 11px; font-weight: 700; color: white;
+        }
+
+        .ai-knowledge-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+            margin-top: 8px;
+        }
+        .ai-kn-card {
+            background: rgba(255,255,255,0.06); border-radius: 10px;
+            padding: 12px; border: 1px solid rgba(255,255,255,0.08);
+        }
+        .ai-kn-icon { font-size: 16px; margin-bottom: 4px; }
+        .ai-kn-title { font-size: 12px; font-weight: 600; color: #ef4444; margin-bottom: 4px; }
+        .ai-kn-text { font-size: 12px; color: rgba(255,255,255,0.8); line-height: 1.5; }
+        .ai-kn-tag {
+            display: inline-block; padding: 2px 8px; border-radius: 4px;
+            font-size: 11px; background: rgba(102,126,234,0.3);
+            color: #fca5a5; margin: 2px 3px;
+        }
+        .ai-warning {
+            margin-top: 12px; padding: 10px 14px;
+            background: rgba(239,68,68,0.15); border-radius: 10px;
+            border: 1px solid rgba(239,68,68,0.3); font-size: 12px;
+            color: #fca5a5; line-height: 1.5;
+        }
+        .ai-loading {
+            text-align: center; padding: 30px; color: rgba(255,255,255,0.5);
+            font-size: 14px;
+        }
+        .ai-loading .spinner {
+            display: inline-block; width: 24px; height: 24px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: #667eea; border-radius: 50%;
+            animation: spin 0.8s linear infinite; margin-bottom: 8px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .ai-footer {
+            text-align: center; margin-top: 16px; padding-top: 12px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            font-size: 11px; color: rgba(255,255,255,0.35);
+        }
+
+        @media (max-width: 480px) {
+            .container { padding: 12px; }
+            .card { padding: 16px; }
+            .report-content { font-size: 12px; }
+            .action-grid .btn { min-width: 100%; }
+            .ai-knowledge-grid { grid-template-columns: 1fr; }
+            .ai-disease-name { width: 70px; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h2>🏻 AI 智能诊断报告</h2>
+        <div class="sub">GLM-4.5 AI 医学智能体 · 仅供参考</div>
+        <div class="badge">🧠 AI Powered by GLM-4.5</div>
+    </div>
+
+    <div class="card">
+        <div class="patient-summary">
+            <strong>👁 {{ patient.get('surname', '') }}（{{ patient.get('gender', '') }}）编号：{{ patient.get('patient_id', '001') }}</strong><br>
+            年龄：{{ patient.get('age', '') }}岁 · 所在地：{{ patient.get('location', '') }}
+            {% if patient.get('birth_date') %} · 出生：{{ patient.get('birth_date') }}{% endif %}
+            {% if patient.get('email') %} · 📧 {{ patient.get('email') }}{% endif %}
+        </div>
+
+        <div class="report-content">{{ report }}</div>
+
+        <div class="action-grid" style="margin-top: 20px;">
+            <a href="/download_pdf" class="btn btn-primary">
+                📜 下载PDF报告
+            </a>
+            {% if patient.get('email') %}
+            <button id="sendEmailBtn" class="btn btn-success" onclick="sendEmail()">
+                📧 发送到 {{ patient.get('email') }}
+            </button>
+            {% endif %}
+            <a href="/quick" class="btn btn-outline">🔄 重新问诊</a>
+        </div>
+
+        <div style="text-align:center; margin-top:10px;">
+            <a href="/settings" style="color:#667eea; font-size:12px; text-decoration:none;">📧 配置邮箱发送</a>
+            &nbsp;·&nbsp;
+            <a href="/records" style="color:#667eea; font-size:12px; text-decoration:none;">📋 病历记录</a>
+        </div>
+
+        <div id="emailStatus" class="toast" style="display:none; margin-top:12px;"></div>
+
+        <div class="disclaimer">
+            ⚕️ 本报告由AI智能体（GLM-4.5）自动生成，仅供参考，不构成医疗诊断。<br>
+            具体诊疗方案请咨询线下执业医师。如有紧急情况请立即拨打120。
+        </div>
+    </div>
+
+    <!-- ====== 质谱AI 分析卡片 ====== -->
+    <div class="ai-card" id="aiAnalysisCard">
+        <div class="ai-header">
+            <div class="ai-logo">🧬</div>
+            <div>
+                <div class="ai-title">质谱AI 智能分析</div>
+                <div class="ai-subtitle">GLM-4.5 · 基于深度学习的医学推理</div>
+            </div>
+        </div>
+        <div class="ai-loading" id="aiLoading">
+            <div class="spinner"></div>
+            <div>AI正在分析您的症状...</div>
+        </div>
+        <div id="aiContent" style="display:none;"></div>
+    </div>
+
+    <div class="footer">AI 智能导诊系统 · GLM-4.5 驱动</div>
+</div>
+
+<script>
+function sendEmail() {
+    const btn = document.getElementById('sendEmailBtn');
+    const status = document.getElementById('emailStatus');
+    btn.disabled = true;
+    btn.textContent = '⏳ 发送中...';
+    status.style.display = 'none';
+    fetch('/send_email', { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            status.className = 'toast ' + (data.success ? 'success' : 'error');
+            status.textContent = data.success ? '✅ 已成功发送至邮箱' : '⚠️ ' + data.message;
+            status.style.display = 'block';
+            btn.textContent = data.success ? '✅ 已发送' : '📧 重试发送';
+            btn.disabled = false;
+        })
+        .catch(err => {
+            status.className = 'toast error';
+            status.textContent = '发送失败：' + err;
+            status.style.display = 'block';
+            btn.textContent = '📧 重试发送';
+            btn.disabled = false;
+        });
+}
+
+// ====== 加载质谱AI分析 ======
+(function loadAiAnalysis() {
+    var symptomText = {{ symptom_text|tojson|safe }};
+    var patientData = {{ patient_json|tojson|safe }};
+
+    if (!symptomText) {
+        // 尝试从报告文本中提取症状关键词
+        symptomText = "{{ report[:200]|e }}";
+    }
+
+    if (!symptomText || symptomText.length < 5) {
+        document.getElementById('aiLoading').innerHTML = '<div style="color:rgba(255,255,255,0.4);">暂无症状数据，无法生成AI分析</div>';
+        return;
+    }
+
+    fetch('/api/report/ai_analysis', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            symptom: symptomText,
+            patient: patientData || {}
+        })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(resp) {
+        document.getElementById('aiLoading').style.display = 'none';
+        var content = document.getElementById('aiContent');
+        content.style.display = 'block';
+
+        if (!resp.success) {
+            content.innerHTML = '<div class="ai-warning">⚠️ AI分析暂不可用：' + (resp.error || '未知错误') + '</div>';
+            return;
+        }
+
+        var d = resp.data;
+        var html = '';
+
+        // 智能标签行
+        var sevDot = 'dot-green';
+        var sevLabel = '🟢 轻度可观察';
+        if (d.severity === 'yellow') { sevDot = 'dot-yellow'; sevLabel = '🟡 需尽快就医'; }
+        else if (d.severity === 'red') { sevDot = 'dot-red'; sevLabel = '🔴 立即急诊'; }
+
+        html += '<div class="ai-badge-row">';
+        html += '<span class="ai-badge">🏥 ' + d.department + '</span>';
+        html += '<span class="ai-badge"><span class="dot ' + sevDot + '"></span> ' + sevLabel + '</span>';
+        html += '<span class="ai-badge">📋 ' + d.triage + '</span>';
+        if (d.keywords && d.keywords.length) {
+            html += '<span class="ai-badge">🔑 ' + d.keywords.slice(0,3).join(' ') + '</span>';
+        }
+        html += '</div>';
+
+        // 疾病可能性评估
+        if (d.diseases && d.diseases.length > 0) {
+            html += '<div class="ai-section-title">📊 疾病可能性评估</div>';
+            d.diseases.forEach(function(disease) {
+                var prob = disease.probability || 0;
+                var barClass = 'ai-bar-fill';
+                if (prob >= 60) barClass += ' ai-bar-high';
+                else if (prob >= 30) barClass += ' ai-bar-mid';
+                html += '<div class="ai-disease-item">';
+                html += '  <div class="ai-disease-name">' + disease.name + '</div>';
+                html += '  <div class="ai-bar-bg">';
+                html += '    <div class="' + barClass + '" style="width:' + prob + '%"></div>';
+                html += '    <span class="ai-bar-value">' + prob + '%</span>';
+                html += '  </div>';
+                html += '</div>';
+            });
+        }
+
+        // 诊断结论
+        if (d.diagnosis) {
+            html += '<div class="ai-section-title">🩺 诊断结论</div>';
+            html += '<div style="font-size:13px;color:rgba(255,255,255,0.85);line-height:1.6;padding:8px 0;">' + d.diagnosis + '</div>';
+        }
+
+        // 知识分析
+        var kn = d.knowledge || {};
+        if (kn.possible_causes || kn.suggested_exams || kn.advice) {
+            html += '<div class="ai-section-title">📚 医学知识分析</div>';
+            html += '<div class="ai-knowledge-grid">';
+
+            if (kn.possible_causes && kn.possible_causes.length) {
+                html += '<div class="ai-kn-card">';
+                html += '  <div class="ai-kn-icon">🔍</div>';
+                html += '  <div class="ai-kn-title">可能原因</div>';
+                html += '  <div class="ai-kn-text">';
+                kn.possible_causes.forEach(function(c) { html += '<span class="ai-kn-tag">' + c + '</span>'; });
+                html += '  </div>';
+                html += '</div>';
+            }
+
+            if (kn.suggested_exams && kn.suggested_exams.length) {
+                html += '<div class="ai-kn-card">';
+                html += '  <div class="ai-kn-icon">🔬</div>';
+                html += '  <div class="ai-kn-title">建议检查</div>';
+                html += '  <div class="ai-kn-text">';
+                kn.suggested_exams.forEach(function(e) { html += '<span class="ai-kn-tag">' + e + '</span>'; });
+                html += '  </div>';
+                html += '</div>';
+            }
+
+            if (kn.red_flags && kn.red_flags.length) {
+                html += '<div class="ai-kn-card">';
+                html += '  <div class="ai-kn-icon">⚠️</div>';
+                html += '  <div class="ai-kn-title">危险信号</div>';
+                html += '  <div class="ai-kn-text">';
+                kn.red_flags.forEach(function(f) { html += '<span class="ai-kn-tag" style="background:#dc2626;color:#ffffff;font-weight:600;padding:3px 8px;border-radius:4px;font-size:12px;">' + f + '</span>'; });
+                html += '  </div>';
+                html += '</div>';
+            }
+
+            if (kn.advice) {
+                html += '<div class="ai-kn-card" style="grid-column:span 2;">';
+                html += '  <div class="ai-kn-icon">💊</div>';
+                html += '  <div class="ai-kn-title">处理建议</div>';
+                html += '  <div class="ai-kn-text">' + kn.advice + '</div>';
+                html += '</div>';
+            }
+
+            html += '</div>';
+        }
+
+        // 警告
+        if (d.severity === 'red' || (kn.red_flags && kn.red_flags.length)) {
+            html += '<div class="ai-warning">⚠️ <strong>注意：</strong>检测到危险信号，建议立即前往医院急诊就诊。</div>';
+        } else if (d.severity === 'yellow') {
+            html += '<div class="ai-warning" style="background:rgba(251,191,36,0.15);border-color:rgba(251,191,36,0.3);color:#fcd34d;">⚠️ <strong>提示：</strong>建议尽快就医，进行进一步检查确诊。</div>';
+        }
+
+        html += '<div class="ai-footer">分析由质谱AI（GLM-4.5）生成 · 仅供临床参考 · 不构成最终诊断</div>';
+
+        content.innerHTML = html;
+
+        // 延迟触发进度条动画
+        setTimeout(function() {
+            content.querySelectorAll('.ai-bar-fill').forEach(function(bar) {
+                var w = bar.style.width;
+                bar.style.width = '0%';
+                setTimeout(function() { bar.style.width = w; }, 50);
+            });
+        }, 200);
+    })
+    .catch(function(err) {
+        document.getElementById('aiLoading').innerHTML = '<div style="color:rgba(255,255,255,0.4);">AI分析加载失败，请刷新页面重试</div>';
+        console.error('AI Analysis Error:', err);
+    });
+})();
+</script>
+</body>
+</html>

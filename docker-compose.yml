@@ -1,0 +1,134 @@
+# Compose 文件版本
+version: '3.8'
+
+services:
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: medical-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-medical2024}
+      MYSQL_DATABASE: ${DB_NAME:-患者病历库}
+      MYSQL_USER: ${DB_USER:-medical}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-medical2024}
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql:ro
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - medical-network
+
+  # Web 应用
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: medical-web
+    restart: unless-stopped
+    environment:
+      # 数据库配置
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: ${DB_USER:-medical}
+      DB_PASSWORD: ${DB_PASSWORD:-medical2024}
+      DB_NAME: ${DB_NAME:-患者病历库}
+
+      # AI 配置
+      ZHIPUAI_API_KEY: ${ZHIPUAI_API_KEY}
+      ZHIPUAI_MODEL: ${ZHIPUAI_MODEL:-glm-4-plus}
+      ZHIPUAI_API_BASE: ${ZHIPUAI_API_BASE:-https://open.bigmodel.cn/api/paas/v4}
+
+      # Flask 配置
+      FLASK_HOST: 0.0.0.0
+      FLASK_PORT: 5000
+      FLASK_DEBUG: ${FLASK_DEBUG:-False}
+
+      # 向量库配置
+      VECTOR_DB_DIR: /app/.vector_db
+      VECTOR_COLLECTION: ${VECTOR_COLLECTION:-medical_cases}
+      VECTOR_EMBED_MODEL: ${VECTOR_EMBED_MODEL:-embedding-2}
+
+      # 其他配置
+      PYTHONUNBUFFERED: 1
+    ports:
+      - "5000:5000"
+    volumes:
+      # 持久化向量库数据
+      - vector_data:/app/.vector_db
+      # 管理员用户数据
+      - admin_data:/root/.medical_agent_admin
+      # 应用数据
+      - app_data:/app
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/user/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - medical-network
+
+  # Redis (可选，用于缓存和队列)
+  redis:
+    image: redis:7-alpine
+    container_name: medical-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis2024}
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - medical-network
+
+  # Nginx 反向代理 (生产环境)
+  nginx:
+    image: nginx:alpine
+    container_name: medical-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - web
+    networks:
+      - medical-network
+    profiles:
+      - production
+
+volumes:
+  mysql_data:
+    driver: local
+  vector_data:
+    driver: local
+  admin_data:
+    driver: local
+  app_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  medical-network:
+    driver: bridge

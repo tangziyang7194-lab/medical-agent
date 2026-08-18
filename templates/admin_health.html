@@ -1,0 +1,213 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统健康检查 - 管理端</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background: #f0f2f5; min-height: 100vh; color: #333; }
+        .topbar { background: linear-gradient(135deg, #1a1a2e, #16213e); color: white; padding: 0 24px; height: 60px; display: flex; align-items: center; justify-content: space-between; }
+        .topbar h1 { font-size: 18px; }
+        .topbar a { color: rgba(255,255,255,0.8); text-decoration: none; font-size: 13px; margin: 0 8px; }
+        .container { max-width: 900px; margin: 0 auto; padding: 20px; }
+        .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 16px; }
+        .card-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #667eea; display: flex; align-items: center; gap: 8px; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+        .dot-ok { background: #22c55e; } .dot-warning { background: #f59e0b; } .dot-error { background: #ef4444; }
+        .overall { text-align: center; padding: 20px; border-radius: 12px; font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+        .overall.ok { background: #dcfce7; color: #166534; } .overall.warning { background: #fef3c7; color: #92400e; } .overall.error { background: #fee2e2; color: #991b1b; }
+        .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+        .stat-item { text-align: center; padding: 12px; background: #f8f9fa; border-radius: 8px; }
+        .stat-number { font-size: 24px; font-weight: 700; color: #667eea; }
+        .stat-label { font-size: 12px; color: #888; margin-top: 2px; }
+        .msg { font-size: 13px; color: #666; margin-top: 4px; }
+        .env-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .env-table td { padding: 6px 10px; border-bottom: 1px solid #f0f0f0; }
+        .env-table td:first-child { color: #888; font-weight: 500; width: 140px; }
+        .btn { padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; }
+        .btn:hover { opacity: 0.9; }
+        .btn-green { background: #22c55e; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .tips-pagination { display: flex; gap: 6px; align-items: center; margin: 10px 0; flex-wrap: wrap; }
+        .tips-pagination button { padding: 4px 10px; font-size: 11px; }
+        .tips-item { padding: 6px 0; border-bottom: 1px solid #f5f5f5; font-size: 12px; }
+        .tips-item strong { color: #333; }
+        .tips-category { color: #999; font-size: 11px; }
+        .tips-content { color: #555; margin-top: 2px; }
+        @media (max-width: 480px) { .container { padding: 12px; } }
+    </style>
+</head>
+<body>
+<div class="topbar"><h1>🩺 系统健康检查</h1><div><a href="/admin/dashboard">← 返回管理端</a><a href="/admin/health">🔄 刷新</a></div></div>
+<div class="container">
+    <div class="overall {{ status.overall }}">
+        {% if status.overall == 'ok' %}✅ 系统运行正常{% elif status.overall == 'warning' %}⚠️ 系统有警告{% else %}❌ 系统存在异常{% endif %}
+    </div>
+
+    <div class="card">
+        <div class="card-title">📊 数据概览</div>
+        <div class="stat-grid">
+            {% set mysql = status.services.get('mysql', {}) %}
+            <div class="stat-item"><div class="stat-number">{{ mysql.get('cases', '-') }}</div><div class="stat-label">📋 病例</div></div>
+            <div class="stat-item"><div class="stat-number">{{ mysql.get('consultations', '-') }}</div><div class="stat-label">💬 咨询</div></div>
+            <div class="stat-item"><div class="stat-number">{{ mysql.get('patients', '-') }}</div><div class="stat-label">👤 患者</div></div>
+            {% set chroma = status.services.get('chromadb', {}) %}
+            <div class="stat-item"><div class="stat-number">{{ chroma.get('vectors', '-') }}</div><div class="stat-label">🧠 向量</div></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">🔌 服务状态</div>
+        {% for name, svc in status.services.items() %}
+        <div style="padding:10px 0;border-bottom:1px solid #f0f0f0;">
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span class="status-dot dot-{{ svc.status }}"></span>
+                <strong>{% if name=='mysql' %}🗄️ MySQL{% elif name=='chromadb' %}🧠 ChromaDB{% elif name=='zhipuai' %}🤖 质谱AI{% elif name=='admin' %}🔐 管理员{% else %}{{ name }}{% endif %}</strong>
+                <span style="font-size:12px;color:#888;">{% if svc.status=='ok' %}正常{% elif svc.status=='warning' %}警告{% else %}异常{% endif %}</span>
+            </div>
+            {% if svc.message %}<div class="msg">⚠️ {{ svc.message }}</div>{% endif %}
+            {% if svc.model %}<div class="msg">模型: {{ svc.model }}</div>{% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="card">
+        <div class="card-title">⚙️ 环境变量</div>
+        <table class="env-table">
+            <tr><td>数据库</td><td>{{ config_loader.DB_HOST }}:{{ config_loader.DB_PORT }}/{{ config_loader.DB_NAME }}</td></tr>
+            <tr><td>智谱AI模型</td><td>{{ config_loader.ZHIPUAI_MODEL }}</td></tr>
+            <tr><td>向量库</td><td>{{ config_loader.VECTOR_DB_DIR }}</td></tr>
+        </table>
+    </div>
+
+    <!-- 柳叶刀文章 -->
+    建议 -->
+    <div class="card">
+        <div class="card-title">🌿 健康养生建议 <span style="font-size:12px;color:#888;font-weight:normal;">每天18:00自动</span></div>
+        <div class="stat-grid" id="tipsStats">
+            <div class="stat-item"><div class="stat-number">-</div><div class="stat-label">🌿 总条数</div></div>
+            <div class="stat-item"><div class="stat-number">-</div><div class="stat-label">📦 批次</div></div>
+            <div class="stat-item"><div class="stat-number">18:00</div><div class="stat-label">⏰ 定时</div></div>
+        </div>
+        <div style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;">
+            <button class="btn" id="btnGenerate" onclick="runHealthTips(document.getElementById('btnGenerate'))">🚀 立即生成30条</button>
+            <button class="btn" style="background:#f59e0b;" id="btnSummarize" onclick="summarizeTips()">🤖 AI总结</button>
+            <button class="btn" style="background:#ef4444;" id="btnDedup" onclick="dedupTips()">🔄 实时去重</button>
+            <button class="btn btn-green" onclick="loadTipsPage(1)">🔄 刷新列表</button>
+            <a href="/health_tips" target="_blank" style="padding:8px 16px;background:#059669;color:white;border-radius:6px;font-size:12px;text-decoration:none;">🔗 公开页</a>
+        </div>
+        <div class="tips-pagination">
+            <button class="btn" onclick="loadTipsPage(1)" id="btnFirst">首页</button>
+            <button class="btn" onclick="loadTipsPage(currentTipsPage-1)" id="btnPrev">‹</button>
+            <span style="font-size:12px;color:#888;" id="tipsPageInfo">加载中...</span>
+            <button class="btn" onclick="loadTipsPage(currentTipsPage+1)" id="btnNext">›</button>
+            <button class="btn" onclick="loadTipsPage(totalTipsPages)" id="btnLast">末页</button>
+        </div>
+        <div id="tipsResult" style="font-size:13px;margin:6px 0;"></div>
+        <div id="tipsList"></div>
+    </div>
+</div>
+
+<script>
+var currentTipsPage = 1, totalTipsPages = 1;
+
+function loadTipsPage(page) {
+    if (page < 1) page = 1;
+    fetch("/api/health_tips/list?page=" + page)
+        .then(function(r){return r.json()})
+        .then(function(data){
+            currentTipsPage = data.page || 1;
+            totalTipsPages = data.total_pages || 1;
+
+            document.getElementById("tipsStats").innerHTML =
+                '<div class="stat-item"><div class="stat-number">' + (data.total||0) + '</div><div class="stat-label">🌿 总条数</div></div>' +
+                '<div class="stat-item"><div class="stat-number">-</div><div class="stat-label">📦 批次</div></div>' +
+                '<div class="stat-item"><div class="stat-number">18:00</div><div class="stat-label">⏰ 定时</div></div>';
+
+            document.getElementById("tipsPageInfo").textContent = "第 " + data.page + "/" + data.total_pages + " 页";
+            document.getElementById("btnPrev").disabled = data.page <= 1;
+            document.getElementById("btnNext").disabled = data.page >= data.total_pages;
+            document.getElementById("btnFirst").disabled = data.page <= 1;
+            document.getElementById("btnLast").disabled = data.page >= data.total_pages;
+
+            var html = "";
+            if (data.tips && data.tips.length > 0) {
+                data.tips.forEach(function(t){
+                    var isAi = (t.source||"").indexOf("AI") >= 0;
+                    var aiStyle = isAi ? ' style="border-left:3px solid #f59e0b;background:#fffbeb;"' : '';
+                    html += '<div class="tips-item"' + aiStyle + '>';
+                    if (t.source_url) {
+                        html += '<strong><a href="' + t.source_url + '" target="_blank" style="color:#1a73e8;">' + (t.title||"") + '</a></strong> ';
+                    } else {
+                        html += '<strong>' + (t.title||"") + '</strong> ';
+                    }
+                    html += '<span class="tips-category">(' + (t.category||"-") + ')</span>';
+                    html += '<div class="tips-content">' + ((t.content||"").substring(0,120)) + '</div>';
+                    if (t.summary) {
+                        html += '<div style="margin-top:4px;padding:6px 8px;background:#f0fdf4;border-radius:6px;font-size:11px;color:#166534;"><strong>🤖 AI总结：</strong>' + t.summary + '</div>';
+                    }
+                    html += '</div>';
+                });
+            } else {
+                html = '<div style="text-align:center;padding:20px;color:#999;">暂无数据</div>';
+            }
+            document.getElementById("tipsList").innerHTML = html;
+        });
+}
+
+function dedupTips() {
+    if (!confirm('扫描全部数据并删除重复条目？\n（保留最早的一条）')) return;
+    var btn = document.getElementById('btnDedup');
+    btn.disabled = true; btn.textContent = '⏳ 去重中...';
+    fetch('/api/admin/health_tips/dedup', {method:'POST'})
+        .then(function(r){return r.json()})
+        .then(function(data){
+            btn.disabled = false; btn.textContent = '🔄 实时去重';
+            if (data.success) {
+                var r = data.results;
+                document.getElementById('tipsResult').innerHTML = '<span style="color:#22c55e;">✅ 扫描' + r.total + '条，删除' + r.deleted + '条重复</span>';
+                loadTipsPage(1);
+            }
+        });
+}
+
+function summarizeTips() {
+    var btn = document.getElementById('btnSummarize');
+    btn.disabled = true; btn.textContent = '⏳ 总结中...';
+    fetch('/api/admin/health_tips/summarize', {method:'POST'})
+        .then(function(r){return r.json()})
+        .then(function(data){
+            btn.disabled = false; btn.textContent = '🤖 AI总结全部';
+            if (data.success) {
+                document.getElementById('tipsResult').innerHTML = '<span style="color:#22c55e;">✅ 总结完成：' + JSON.stringify(data.results) + '</span>';
+                loadTipsPage(1);
+            } else {
+                document.getElementById('tipsResult').innerHTML = '<span style="color:#d93025;">❌ ' + (data.error||'失败') + '</span>';
+            }
+        });
+}
+
+function runHealthTips(btn) {
+    if (!btn) return;
+    btn.disabled = true; btn.textContent = "⏳ 生成中...";
+    document.getElementById("tipsResult").textContent = "正在多源采集健康建议...";
+    fetch("/api/admin/health_tips/run", {method:"POST"})
+        .then(function(r){return r.json()})
+        .then(function(data){
+            btn.disabled = false; btn.textContent = "🚀 立即生成30条";
+            if (data.success) {
+                document.getElementById("tipsResult").innerHTML = '<span style="color:#22c55e;">✅ 成功生成 ' + data.saved + ' 条</span>';
+                loadTipsPage(1);
+            } else {
+                document.getElementById("tipsResult").innerHTML = '<span style="color:#d93025;">❌ 生成失败</span>';
+            }
+        });
+}
+
+loadTipsPage(1);
+
+
+</script>
+</body>
+</html>

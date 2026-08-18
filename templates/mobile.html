@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<meta name="theme-color" content="#667eea">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="/static/manifest.json">
+<link rel="apple-touch-icon" href="/static/icon-192.svg">
+<title>AI导诊系统</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;background:#f5f3ff;color:#333;padding-bottom:70px;min-height:100vh}
+.top-bar{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;padding:14px 18px;padding-top:calc(14px + env(safe-area-inset-top,0));display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+.top-bar .title{font-size:17px;font-weight:600}
+.top-bar .badge{font-size:11px;background:rgba(255,255,255,.2);padding:2px 10px;border-radius:10px}
+.stat-bar{display:flex;gap:6px;padding:10px 14px;background:#fff;margin:8px 12px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.stat-item{flex:1;text-align:center}
+.stat-num{font-size:18px;font-weight:700;color:#667eea}
+.stat-lbl{font-size:10px;color:#999;margin-top:1px}
+.search-bar{padding:0 12px;margin-bottom:6px}
+.search-bar input{width:100%;padding:10px 14px;border:none;border-radius:20px;font-size:14px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.04);outline:none}
+.dept-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:0 12px;margin-bottom:8px}
+.dept-card{background:#fff;border-radius:10px;padding:10px 6px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.04);cursor:pointer;transition:all .15s}
+.dept-card:active{transform:scale(.95)}
+.dept-icon{font-size:22px}
+.dept-name{font-size:11px;color:#555;margin-top:4px;font-weight:500}
+.dept-count{font-size:10px;color:#999}
+.section-title{font-size:14px;font-weight:600;color:#333;padding:8px 14px 4px;display:flex;justify-content:space-between}
+.section-title .more{font-size:12px;color:#667eea;cursor:pointer}
+.case-list{padding:0 12px}
+.case-card{background:#fff;border-radius:10px;padding:12px;margin-bottom:6px;box-shadow:0 1px 4px rgba(0,0,0,.04);display:flex;gap:10px;cursor:pointer;transition:all .15s}
+.case-card:active{background:#f8f8ff}
+.case-left{width:4px;border-radius:2px;flex-shrink:0}
+.case-green{background:#34a853}.case-yellow{background:#fbbc04}.case-red{background:#ea4335}
+.case-body{flex:1;min-width:0}
+.case-title{font-size:13px;font-weight:600;color:#333;display:flex;justify-content:space-between;align-items:center}
+.case-dept{font-size:10px;color:#667eea;background:#f5f3ff;padding:1px 6px;border-radius:3px}
+.case-symptom{font-size:12px;color:#666;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.case-id{font-size:10px;color:#ccc;margin-top:2px}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;display:flex;border-top:1px solid #eee;padding:6px 0;padding-bottom:calc(6px + env(safe-area-inset-bottom,0));z-index:100}
+.nav-item{flex:1;text-align:center;cursor:pointer;padding:4px 0}
+.nav-icon{font-size:20px}
+.nav-lbl{font-size:10px;color:#999;margin-top:1px}
+.nav-item.active .nav-lbl{color:#667eea;font-weight:600}
+.modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:200;justify-content:center;align-items:flex-end}
+.modal.show{display:flex}
+.modal-box{background:#fff;border-radius:16px 16px 0 0;width:100%;max-height:80vh;overflow-y:auto;animation:slideUp .25s}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-header{padding:14px 16px;font-size:15px;font-weight:600;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f0f0f0;position:sticky;top:0;background:#fff;z-index:1}
+.modal-close{background:none;border:none;font-size:20px;color:#999;cursor:pointer;padding:4px}
+.modal-body{padding:8px 16px 16px}
+.modal-case2{padding:8px 0;border-bottom:1px solid #f8f8f8;font-size:13px}
+.pagination{display:flex;justify-content:center;align-items:center;gap:8px;padding:10px 0;font-size:13px;color:#666}
+.pagination button{border:1px solid #ddd;border-radius:6px;padding:4px 12px;background:#fff;cursor:pointer;font-size:13px}
+.pagination button:disabled{opacity:.3}
+/* 聊天 */
+#chatContainer{display:none;flex-direction:column;height:calc(100vh - 110px);padding:0 12px 8px}
+#chatContainer.active{display:flex}
+.chat-msgs{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:8px 0}
+.msg{max-width:85%;padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.5;white-space:pre-wrap}
+.msg.bot{background:#fff;color:#333;align-self:flex-start;border-bottom-left-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.msg.user{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.chat-input2{display:flex;gap:6px;padding:8px 0}
+.chat-input2 textarea{flex:1;border:1.5px solid #e0e0e0;border-radius:20px;padding:10px 14px;font-size:14px;resize:none;outline:none;font-family:inherit;max-height:50px;background:#fff}
+.chat-input2 textarea:focus{border-color:#667eea}
+.chat-input2 button{width:44px;height:44px;border-radius:50%;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-size:18px;cursor:pointer;flex-shrink:0}
+.typing{display:flex;gap:4px;padding:12px 16px;background:#fff;border-radius:16px;border-bottom-left-radius:4px;align-self:flex-start}
+.typing span{width:8px;height:8px;border-radius:50%;background:#ccc;animation:typing 1.4s infinite}
+.typing span:nth-child(2){animation-delay:.2s}
+.typing span:nth-child(3){animation-delay:.4s}
+@keyframes typing{0%,60%,100%{opacity:.3;transform:scale(.8)}30%{opacity:1;transform:scale(1)}}
+.empty{text-align:center;padding:40px 16px;color:#ccc;font-size:13px}
+.empty .emoji{font-size:40px;margin-bottom:8px}
+.toast{display:none;position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:8px 16px;border-radius:20px;font-size:13px;z-index:300;white-space:nowrap}
+.toast.show{display:block}
+.chat-quick{display:flex;gap:6px;flex-wrap:wrap;padding:4px 0}
+.chat-quick button{padding:8px 14px;border:1.5px solid #e0d8f0;border-radius:16px;background:#fff;font-size:12px;color:#555;cursor:pointer;transition:all .15s}
+.chat-quick button:active{background:#f5f3ff;border-color:#667eea}
+</style>
+</head>
+<body>
+<div class="top-bar"><div class="title" id="pageTitle">🏥 AI导诊系统</div><div class="badge" id="topBadge">GLM-4.5</div></div>
+
+<!-- 首页 -->
+<div id="homePage">
+  <div class="stat-bar">
+    <div class="stat-item"><div class="stat-num" id="totalCases">0</div><div class="stat-lbl">病例总数</div></div>
+    <div class="stat-item"><div class="stat-num" id="totalDepts">0</div><div class="stat-lbl">覆盖科室</div></div>
+    <div class="stat-item"><div class="stat-num" id="totalRecords">0</div><div class="stat-lbl">咨询记录</div></div>
+  </div>
+  <div class="search-bar"><input id="searchInput" placeholder="🔍 搜索科室或症状..." oninput="filterCases(this.value)"></div>
+  <div class="section-title"><span>📂 科室分类</span></div>
+  <div class="dept-grid" id="deptGrid"></div>
+  <div class="section-title"><span>📋 最近病例</span><span class="more" id="viewAll" onclick="showAllCases()">查看全部 →</span></div>
+  <div class="case-list" id="caseList"></div>
+</div>
+
+<!-- 问诊 -->
+<div id="chatContainer">
+  <div class="chat-msgs" id="chatMsgs"></div>
+  <div class="chat-quick" id="chatQuick"><button onclick="quickChat('头痛三天了，太阳穴跳痛')">💬 头痛</button><button onclick="quickChat('肚子痛，还有点发烧')">💬 肚子痛</button><button onclick="quickChat('心慌手抖，消瘦怕热')">💬 心慌</button></div>
+  <div class="chat-input2"><textarea id="chatInput" rows="1" placeholder="描述症状..." onkeydown="if(event.key=='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"></textarea><button onclick="sendChat()">↵</button></div>
+</div>
+
+<!-- 记录 -->
+<div id="recordsPage" style="display:none;"><div class="case-list" id="recordsList"></div></div>
+
+<!-- 关于 -->
+<div id="aboutPage" style="display:none;"><div class="empty" style="line-height:2;"><div class="emoji">🏥</div><p style="font-size:16px;font-weight:600;color:#333;">AI 导诊系统</p><p style="font-size:13px;color:#999;">v2.0 移动端</p><p style="font-size:12px;color:#999;">GLM-4.5 智能医学体</p><p style="font-size:12px;color:#999;">数据实时同步服务器</p></div></div>
+
+<div class="bottom-nav">
+  <div class="nav-item active" onclick="switchTab('home')"><div class="nav-icon">🏠</div><div class="nav-lbl">首页</div></div>
+  <div class="nav-item" onclick="switchTab('chat')"><div class="nav-icon">💬</div><div class="nav-lbl">问诊</div></div>
+  <div class="nav-item" onclick="switchTab('records')"><div class="nav-icon">📋</div><div class="nav-lbl">记录</div></div>
+  <div class="nav-item" onclick="switchTab('about')"><div class="nav-icon">ℹ️</div><div class="nav-lbl">关于</div></div>
+</div>
+
+<div class="modal" id="modal"><div class="modal-box">
+  <div class="modal-header"><span id="modalTitle">详情</span><span id="modalCount" style="font-size:12px;color:#999;"></span><button class="modal-close" onclick="closeModal()">✕</button></div>
+  <div class="modal-body" id="modalBody"></div>
+</div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const API_KEY = "520d6eb5cc16464a8f0f23a428597a3c.NjwCBlDNNYFnMgGe";
+let allCases = [], chatMsgs = [], allRecords = [];
+
+function loadData() {
+  fetch('/api/cases').then(r=>r.json()).then(d=>{if(!d.error){allCases=d;renderHome();}}).catch(()=>showToast('加载失败'));
+  fetch('/api/consultations').then(r=>r.json()).then(d=>{if(!d.error)allRecords=d;}).catch(()=>{});
+}
+function showToast(m){let t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);}
+function closeModal(){document.getElementById('modal').classList.remove('show');}
+
+// ====== 首页 ======
+function renderHome() {
+  document.getElementById('totalCases').textContent = allCases.length;
+  let depts = new Set(allCases.map(c=>c.dept));
+  document.getElementById('totalDepts').textContent = depts.size;
+  document.getElementById('totalRecords').textContent = allRecords.length;
+  document.getElementById('topBadge').textContent = allCases.length + '例';
+  let groups = {};
+  allCases.forEach(c => { let d = c.dept||'未知'; if(!groups[d]) groups[d]=[]; groups[d].push(c); });
+  let sorted = Object.entries(groups).sort((a,b) => b[1].length - a[1].length);
+  let icons = {'消化内科':'🍎','呼吸内科':'🫁','心血管内科':'❤️','内分泌科':'🔬','神经内科':'🧠','普外科':'🔪','骨科':'🦴','妇产科':'👶','儿科':'🧒','皮肤科':'🧴','眼科':'👁️','耳鼻喉科':'👂','泌尿外科':'🫧','急诊科':'🚨','风湿免疫科':'🩺','精神心理科':'🧘','肛肠科':'🩸'};
+  document.getElementById('deptGrid').innerHTML = sorted.map(([dept,items]) =>
+    `<div class="dept-card" onclick="showDeptCases('${dept}')"><div class="dept-icon">${icons[dept]||'🏥'}</div><div class="dept-name">${dept}</div><div class="dept-count">${items.length}例</div></div>`
+  ).join('');
+  renderCases(allCases.slice(0, 20));
+}
+function renderCases(arr){
+  if(!arr.length){document.getElementById('caseList').innerHTML='<div class="empty"><div class="emoji">📭</div>暂无病例</div>';return;}
+  document.getElementById('caseList').innerHTML = arr.map(c => {
+    let color = c.severity==='red'?'case-red':c.severity==='yellow'?'case-yellow':'case-green';
+    return `<div class="case-card" onclick="showDetail(${c.id})"><div class="case-left ${color}"></div><div class="case-body"><div class="case-title"><span>🩺 ${c.diagnosis||'待诊断'}</span><span class="case-dept">${c.dept||'未知'}</span></div><div class="case-symptom">📝 ${(c.symptom||'').substring(0,50)}</div><div class="case-id">#${String(c.id).padStart(3,'0')}</div></div></div>`;
+  }).join('');
+}
+function filterCases(kw){
+  if(!kw){renderCases(allCases.slice(0,20));return;}
+  let f = allCases.filter(c=>(c.dept&&c.dept.includes(kw))||(c.diagnosis&&c.diagnosis.includes(kw))||(c.symptom&&c.symptom.includes(kw)));
+  renderCases(f.slice(0,20));
+}
+function showDeptCases(dept){
+  let items = allCases.filter(c=>c.dept===dept), p=1, tp=Math.ceil(items.length/20);
+  function rp(pg){
+    let s=(pg-1)*20, e=Math.min(s+20,items.length);
+    document.getElementById('modalBody').innerHTML = items.slice(s,e).map(c=>{
+      let sv=c.severity==='red'?'🔴':c.severity==='yellow'?'🟡':'🟢';
+      return `<div class="modal-case2"><strong>${sv} ${c.diagnosis||'待诊断'}</strong><div style="color:#666;font-size:12px;margin:2px 0;">📝 ${c.symptom||''}</div><div class="case-id">#${String(c.id).padStart(3,'0')}</div></div>`;
+    }).join('') + (tp>1?`<div class="pagination"><button onclick="rp(${pg-1})" ${pg<=1?'disabled':''}>‹</button><span>${pg}/${tp}</span><button onclick="rp(${pg+1})" ${pg>=tp?'disabled':''}>›</button></div>`:'');
+    window.rp=rp;
+  }
+  document.getElementById('modalTitle').textContent='🏥 '+dept; document.getElementById('modalCount').textContent=items.length+'例'; rp(1);
+  document.getElementById('modal').classList.add('show');
+}
+function showAllCases(){
+  let p=1, tp=Math.ceil(allCases.length/20);
+  function rp(pg){
+    let s=(pg-1)*20, e=Math.min(s+20,allCases.length);
+    document.getElementById('modalBody').innerHTML = allCases.slice(s,e).map(c=>{
+      let sv=c.severity==='red'?'🔴':c.severity==='yellow'?'🟡':'🟢';
+      return `<div class="modal-case2"><strong>${sv} ${c.diagnosis||'待诊断'}</strong><span style="font-size:11px;color:#667eea;margin-left:6px;">${c.dept}</span><div style="color:#666;font-size:12px;">📝 ${(c.symptom||'').substring(0,60)}</div><div class="case-id">#${String(c.id).padStart(3,'0')}</div></div>`;
+    }).join('') + (tp>1?`<div class="pagination"><button onclick="rp(${pg-1})" ${pg<=1?'disabled':''}>‹</button><span>${pg}/${tp}</span><button onclick="rp(${pg+1})" ${pg>=tp?'disabled':''}>›</button></div>`:'');
+    window.rp=rp;
+  }
+  document.getElementById('modalTitle').textContent='📋 全部病例'; document.getElementById('modalCount').textContent=allCases.length+'例'; rp(1);
+  document.getElementById('modal').classList.add('show');
+}
+function showDetail(id){
+  let c=allCases.find(x=>x.id===id); if(!c)return;
+  let sv=c.severity==='red'?'🔴':c.severity==='yellow'?'🟡':'🟢';
+  document.getElementById('modalBody').innerHTML=`<div style="padding:8px 0;"><div style="font-size:18px;font-weight:600;">${sv} ${c.diagnosis||'待诊断'}</div><div style="font-size:13px;color:#667eea;margin:4px 0;">🏥 ${c.dept} · #${String(c.id).padStart(3,'0')}</div><div style="font-size:14px;color:#333;line-height:1.6;margin:8px 0;padding:12px;background:#f8f9fa;border-radius:8px;">📝 ${c.symptom||'无描述'}</div><div style="font-size:12px;color:#999;">📦 ${c.source||'AI'}</div></div>`;
+  document.getElementById('modalTitle').textContent='🩺 病例详情'; document.getElementById('modalCount').textContent='';
+  document.getElementById('modal').classList.add('show');
+}
+
+// ====== 问诊 ======
+function addMsg(t,r){let d=document.createElement('div');d.className='msg '+r;d.textContent=t;document.getElementById('chatMsgs').appendChild(d);d.scrollIntoView();}
+function showTyping(){let d=document.createElement('div');d.className='typing';d.id='typingDot';d.innerHTML='<span></span><span></span><span></span>';document.getElementById('chatMsgs').appendChild(d);d.scrollIntoView();}
+function hideTyping(){let e=document.getElementById('typingDot');if(e)e.remove();}
+function quickChat(t){document.getElementById('chatQuick').style.display='none';document.getElementById('chatInput').value=t;sendChat();}
+function sendChat(){
+  let inp=document.getElementById('chatInput'),t=inp.value.trim();if(!t)return;
+  inp.value=''; document.getElementById('chatQuick').style.display='none';
+  addMsg(t,'user'); chatMsgs.push({role:'user',content:t});
+  let turns=chatMsgs.filter(m=>m.role==='user').length;
+  showTyping();
+  fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+API_KEY},
+    body:JSON.stringify({model:'glm-4-plus',messages:[{role:'system',content:'你是一位资深主治医师，每次不超过150字，只问1-2个问题。至少3轮后给出诊断建议，末尾加【READY】。'},...chatMsgs],temperature:0.7,max_tokens:1024})
+  }).then(r=>r.json()).then(data=>{
+    hideTyping();
+    let reply=data.choices?.[0]?.message?.content||'抱歉。'; let ready=reply.includes('【READY】')&&turns>=3; let clean=reply.replace('【READY】','').trim();
+    addMsg(clean,'bot'); chatMsgs.push({role:'assistant',content:clean});
+    if(ready){
+      let symptom=chatMsgs.filter(m=>m.role==='user').map(m=>m.content).join(', ');
+      let report=report=symptom+'\n诊断建议: '+clean;
+      fetch('/api/consultations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({symptom:symptom,diagnosis:clean,dept:chatMsgs[chatMsgs.length-1]?.content||'',report:report})});
+      addMsg('✅ 问诊完成！记录已保存','bot');
+    }
+  }).catch(()=>{hideTyping();addMsg('网络错误','bot');});
+}
+
+// ====== 页面切换 ======
+function switchTab(tab){
+  document.querySelectorAll('.nav-item').forEach((el,i)=>el.classList.toggle('active',['home','chat','records','about'][i]===tab));
+  document.getElementById('homePage').style.display=tab==='home'?'block':'none';
+  document.getElementById('chatContainer').className=tab==='chat'?'active':'';
+  document.getElementById('recordsPage').style.display=tab==='records'?'block':'none';
+  document.getElementById('aboutPage').style.display=tab==='about'?'block':'none';
+  if(tab==='home') document.getElementById('pageTitle').textContent='🏥 AI导诊系统';
+  else if(tab==='chat') document.getElementById('pageTitle').textContent='💬 问诊';
+  else if(tab==='records'){document.getElementById('pageTitle').textContent='📋 咨询记录';loadRecords();}
+  else document.getElementById('pageTitle').textContent='ℹ️ 关于';
+}
+
+function loadRecords(){
+  fetch('/api/consultations').then(r=>r.json()).then(d=>{
+    allRecords=d||[];
+    let html=allRecords.length===0?'<div class="empty"><div class="emoji">📭</div><p>暂无咨询记录</p></div>':allRecords.map(r=>
+      `<div class="case-card"><div class="case-left case-green"></div><div class="case-body"><div class="case-title">👤 ${r.patient_id||'在线'}<span class="case-dept">${r.department||'?'}</span></div><div class="case-symptom">🩺 ${(r.diagnosis||'').substring(0,60)}</div><div class="case-id">📝 ${(r.symptom_text||'').substring(0,40)} · ${(r.created_at||'').substring(0,16)}</div></div></div>`
+    ).join('');
+    document.getElementById('recordsList').innerHTML=html;
+    renderHome();
+  }).catch(()=>{});
+}
+
+// 下拉刷新
+let ts=0; document.addEventListener('touchstart',e=>{ts=e.touches[0].clientY;});
+document.addEventListener('touchend',e=>{if(e.changedTouches[0].clientY-ts>100&&window.scrollY<10){showToast('🔄 刷新');loadData();}});
+
+loadData();
+</script>
+</body>
+</html>
