@@ -1,0 +1,13 @@
+# PythonAnywhere 免费版专用依赖（磁盘有限，不含 ChromaDB 等重包）
+# 核心问诊功能完全可用；向量库功能在此环境不可用
+Flask>=3.0.0
+Werkzeug>=3.0.0
+gunicorn>=21.2.0
+pymysql>=1.1.0
+zhipuai>=2.0.0
+jieba>=0.42.1
+reportlab>=4.0.0
+Pillow>=10.0.0
+python-dotenv>=1.0.0
+requests>=2.31.0
+APScheduler>=3.10.0
