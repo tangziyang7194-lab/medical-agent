@@ -6,39 +6,37 @@ import os
 import json
 import chromadb
 from chromadb.config import Settings
-from openai import OpenAI
 from chromadb import EmbeddingFunction
 
 # ========== 配置 ==========
 VECTOR_DB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".vector_db")
 COLLECTION_NAME = "medical_cases"
-EMBEDDING_MODEL = "text-embedding-v3"  # 千问嵌入模型
+EMBEDDING_MODEL = "local-tf-hash"  # 本地哈希向量（jieba分词，免费无API）
 
-# ========== 嵌入函数 ==========
-_zhipu_client = None
-
-def get_zhipu_client():
-    global _zhipu_client
-    if _zhipu_client is None:
-        from ai_glm_agent import API_KEY, _API_BASE
-        _zhipu_client = OpenAI(api_key=API_KEY, base_url=_API_BASE)
-    return _zhipu_client
+# ========== 嵌入函数（本地计算，无需任何 API） ==========
+EMBED_DIM = 512
 
 def glm_embedding(texts):
-    """使用通义千问生成文本嵌入向量"""
+    """本地文本向量化：jieba 分词 + 哈希词频向量（免费、离线、无需余额）"""
+    import jieba
+    import hashlib
     if isinstance(texts, str):
         texts = [texts]
-    try:
-        client = get_zhipu_client()
-        resp = client.embeddings.create(
-            model=EMBEDDING_MODEL,
-            input=texts
-        )
-        embeddings = [d.embedding for d in resp.data]
-        return embeddings
-    except Exception as e:
-        print(f"[向量] 嵌入生成失败: {e}")
-        return None
+    results = []
+    for t in texts:
+        vec = [0.0] * EMBED_DIM
+        for word in jieba.cut(t or ""):
+            word = word.strip()
+            if not word or len(word) < 2:
+                continue
+            h = int(hashlib.md5(word.encode("utf-8")).hexdigest(), 16)
+            vec[h % EMBED_DIM] += 1.0
+        # L2 归一化
+        norm = sum(v * v for v in vec) ** 0.5
+        if norm > 0:
+            vec = [v / norm for v in vec]
+        results.append(vec)
+    return results
 
 class ChromaDBEmbeddingFunction(EmbeddingFunction):
     """ChromaDB自定义嵌入函数 - 使用智谱AI"""
@@ -48,7 +46,7 @@ class ChromaDBEmbeddingFunction(EmbeddingFunction):
     def __call__(self, input):
         result = glm_embedding(input)
         if result is None:
-            return [[0.0] * 1024] * len(input)
+            return [[0.0] * EMBED_DIM] * len(input)
         return result
     
     def name(self):
