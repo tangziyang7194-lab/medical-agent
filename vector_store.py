@@ -6,47 +6,78 @@ import os
 import json
 import chromadb
 from chromadb.config import Settings
+from zhipuai import ZhipuAI
 from chromadb import EmbeddingFunction
 
 # ========== 配置 ==========
 VECTOR_DB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".vector_db")
 COLLECTION_NAME = "medical_cases"
-EMBEDDING_MODEL = "local-tf-hash"  # 本地哈希向量（jieba分词，免费无API）
+EMBEDDING_MODEL = "embedding-2"  # 智谱GLM嵌入模型
 
-# ========== 嵌入函数（本地计算，无需任何 API） ==========
-EMBED_DIM = 512
+# ========== 嵌入函数 ==========
+_zhipu_client = None
 
-def glm_embedding(texts):
-    """本地文本向量化：jieba 分词 + 哈希词频向量（免费、离线、无需余额）"""
+def get_zhipu_client():
+    global _zhipu_client
+    if _zhipu_client is None:
+        try:
+            from config_loader import load_env
+            load_env()
+        except ImportError:
+            pass
+        embed_key = os.environ.get("ZHIPUAI_API_KEY", "")
+        embed_base = os.environ.get("ZHIPUAI_API_BASE", "https://open.bigmodel.cn/api/paas/v4")
+        _zhipu_client = ZhipuAI(api_key=embed_key, base_url=embed_base)
+    return _zhipu_client
+
+def _local_embedding(texts):
+    """本地回退嵌入：jieba 分词 + 哈希词频向量（无智谱Key时自动使用）"""
     import jieba
     import hashlib
-    if isinstance(texts, str):
-        texts = [texts]
+    DIM = 1024
     results = []
     for t in texts:
-        vec = [0.0] * EMBED_DIM
+        vec = [0.0] * DIM
         for word in jieba.cut(t or ""):
             word = word.strip()
             if not word or len(word) < 2:
                 continue
             h = int(hashlib.md5(word.encode("utf-8")).hexdigest(), 16)
-            vec[h % EMBED_DIM] += 1.0
-        # L2 归一化
+            vec[h % DIM] += 1.0
         norm = sum(v * v for v in vec) ** 0.5
         if norm > 0:
             vec = [v / norm for v in vec]
         results.append(vec)
     return results
 
+
+def glm_embedding(texts):
+    """使用智谱AI生成文本嵌入向量（无Key时自动本地回退）"""
+    if isinstance(texts, str):
+        texts = [texts]
+    try:
+        if not os.environ.get("ZHIPUAI_API_KEY"):
+            return _local_embedding(texts)
+        client = get_zhipu_client()
+        resp = client.embeddings.create(
+            model=EMBEDDING_MODEL,
+            input=texts
+        )
+        embeddings = [d.embedding for d in resp.data]
+        return embeddings
+    except Exception as e:
+        print(f"[向量] 智谱嵌入失败，回退本地: {str(e)[:80]}")
+        return _local_embedding(texts)
+
 class ChromaDBEmbeddingFunction(EmbeddingFunction):
     """ChromaDB自定义嵌入函数 - 使用智谱AI"""
     def __init__(self):
-        self._name = "qwen_embedding"
+        self._name = "zhipu_embedding"
     
     def __call__(self, input):
         result = glm_embedding(input)
         if result is None:
-            return [[0.0] * EMBED_DIM] * len(input)
+            return [[0.0] * 1024] * len(input)
         return result
     
     def name(self):
