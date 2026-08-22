@@ -10,10 +10,12 @@ import sys
 import os
 from datetime import datetime, timedelta
 from vector_store import add_case
-from zhipuai import ZhipuAI
+from openai import OpenAI
 
-API_KEY = "520d6eb5cc16464a8f0f23a428597a3c.NjwCBlDNNYFnMgGe"
-_MODEL = "glm-4-plus"
+# 阿里云通义千问配置（从环境变量读取）
+API_KEY = os.environ.get("DASHSCOPE_API_KEY") or os.environ.get("QWEN_API_KEY") or ""
+_MODEL = os.environ.get("QWEN_MODEL") or "qwen-plus"
+_API_BASE = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
 _client = None
 
@@ -21,7 +23,7 @@ _client = None
 def get_client():
     global _client
     if _client is None:
-        _client = ZhipuAI(api_key=API_KEY)
+        _client = OpenAI(api_key=API_KEY, base_url=_API_BASE)
     return _client
 
 

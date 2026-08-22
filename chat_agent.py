@@ -6,16 +6,17 @@
 import json
 import os
 import re
-from zhipuai import ZhipuAI
+from openai import OpenAI
 
 # ========== 质谱AI (智谱) 配置 ==========
 # 从环境变量读取 API Key（本地使用 .env，云端使用平台环境变量）
-API_KEY = os.environ.get("ZHIPUAI_API_KEY") or ""
-_MODEL = os.environ.get("ZHIPUAI_MODEL") or "glm-4-plus"
-_API_BASE = os.environ.get("ZHIPUAI_API_BASE") or "https://open.bigmodel.cn/api/paas/v4"
+# 阿里云通义千问 (DashScope) 配置
+API_KEY = os.environ.get("DASHSCOPE_API_KEY") or os.environ.get("QWEN_API_KEY") or ""
+_MODEL = os.environ.get("QWEN_MODEL") or "qwen-plus"
+_API_BASE = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
 
-_MODEL = "glm-4-plus"
+_MODEL = "qwen-plus"
 
 _client = None
 
@@ -23,7 +24,7 @@ _client = None
 def get_client():
     global _client
     if _client is None:
-        _client = ZhipuAI(api_key=API_KEY, base_url=_API_BASE)
+        _client = OpenAI(api_key=API_KEY, base_url=_API_BASE)
     return _client
 
 

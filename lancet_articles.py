@@ -4,7 +4,7 @@ PubMed医学文献采集模块
 """
 import sys, json, re, pymysql, requests, time
 from datetime import datetime
-from zhipuai import ZhipuAI
+from openai import OpenAI
 sys.stdout.reconfigure(encoding="utf-8")
 
 HEADERS = {"User-Agent": "Mozilla/5.0"}
@@ -86,7 +86,7 @@ def fetch_pubmed_articles(max_results=3):
 def ai_translate_lancet(title, abstract):
     """翻译为中文"""
     from config_loader import ZHIPUAI_API_KEY, ZHIPUAI_API_BASE, ZHIPUAI_MODEL
-    client = ZhipuAI(api_key=ZHIPUAI_API_KEY, base_url=ZHIPUAI_API_BASE)
+    client = OpenAI(api_key=ZHIPUAI_API_KEY, base_url=ZHIPUAI_API_BASE)
     prompt = f"请将以下医学文献翻译成专业流畅的中文：\n标题：{title}\n摘要：{abstract[:1500]}\n\n要求：专业术语准确，语句通顺"
     resp = client.chat.completions.create(model=ZHIPUAI_MODEL, messages=[{"role":"user","content":prompt}], temperature=0.2, max_tokens=2000)
     return resp.choices[0].message.content.strip()
@@ -94,7 +94,7 @@ def ai_translate_lancet(title, abstract):
 def ai_summarize_lancet(title, abstract, source_url):
     """AI总结"""
     from config_loader import ZHIPUAI_API_KEY, ZHIPUAI_API_BASE, ZHIPUAI_MODEL
-    client = ZhipuAI(api_key=ZHIPUAI_API_KEY, base_url=ZHIPUAI_API_BASE)
+    client = OpenAI(api_key=ZHIPUAI_API_KEY, base_url=ZHIPUAI_API_BASE)
     prompt = f"请对此医学文献进行约800字的分段总结：\n标题：{title}\n摘要：{abstract[:1500]}\n链接：{source_url}\n\n分为3-4段（研究背景/方法/发现/意义），直接输出总结"
     resp = client.chat.completions.create(model=ZHIPUAI_MODEL, messages=[{"role":"user","content":prompt}], temperature=0.3, max_tokens=2500)
     return resp.choices[0].message.content.strip()

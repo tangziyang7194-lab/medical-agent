@@ -1,4 +1,4 @@
-﻿"""
+"""
 向量数据库模块 - 基于ChromaDB的语义检索
 用于存储和学习病例的向量表示，实现RAG增强检索
 """
@@ -6,13 +6,13 @@ import os
 import json
 import chromadb
 from chromadb.config import Settings
-from zhipuai import ZhipuAI
+from openai import OpenAI
 from chromadb import EmbeddingFunction
 
 # ========== 配置 ==========
 VECTOR_DB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".vector_db")
 COLLECTION_NAME = "medical_cases"
-EMBEDDING_MODEL = "embedding-2"  # 智谱GLM嵌入模型
+EMBEDDING_MODEL = "text-embedding-v3"  # 千问嵌入模型
 
 # ========== 嵌入函数 ==========
 _zhipu_client = None
@@ -21,11 +21,11 @@ def get_zhipu_client():
     global _zhipu_client
     if _zhipu_client is None:
         from ai_glm_agent import API_KEY, _API_BASE
-        _zhipu_client = ZhipuAI(api_key=API_KEY, base_url=_API_BASE)
+        _zhipu_client = OpenAI(api_key=API_KEY, base_url=_API_BASE)
     return _zhipu_client
 
 def glm_embedding(texts):
-    """使用智谱AI生成文本嵌入向量"""
+    """使用通义千问生成文本嵌入向量"""
     if isinstance(texts, str):
         texts = [texts]
     try:
@@ -43,7 +43,7 @@ def glm_embedding(texts):
 class ChromaDBEmbeddingFunction(EmbeddingFunction):
     """ChromaDB自定义嵌入函数 - 使用智谱AI"""
     def __init__(self):
-        self._name = "zhipu_embedding"
+        self._name = "qwen_embedding"
     
     def __call__(self, input):
         result = glm_embedding(input)

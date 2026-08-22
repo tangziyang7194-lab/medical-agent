@@ -3,7 +3,7 @@
 采集完成后对新文章进行质谱AI中文翻译
 """
 import sys, pymysql
-from zhipuai import ZhipuAI
+from openai import OpenAI
 sys.stdout.reconfigure(encoding="utf-8")
 
 def translate_pending():
@@ -21,7 +21,7 @@ def translate_pending():
         return {"translated": 0}
     
     from config_loader import ZHIPUAI_API_KEY, ZHIPUAI_API_BASE, ZHIPUAI_MODEL
-    client = ZhipuAI(api_key=ZHIPUAI_API_KEY, base_url=ZHIPUAI_API_BASE)
+    client = OpenAI(api_key=ZHIPUAI_API_KEY, base_url=ZHIPUAI_API_BASE)
     
     translated = 0
     for tip in tips:

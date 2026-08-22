@@ -1168,20 +1168,20 @@ def admin_health():
 
     # GLM API检查
     try:
-        from zhipuai import ZhipuAI
+        from openai import OpenAI
         from config_loader import ZHIPUAI_API_KEY, ZHIPUAI_API_BASE, ZHIPUAI_MODEL
         if ZHIPUAI_API_KEY:
-            client = ZhipuAI(api_key=ZHIPUAI_API_KEY, base_url=ZHIPUAI_API_BASE)
+            client = OpenAI(api_key=ZHIPUAI_API_KEY, base_url=ZHIPUAI_API_BASE)
             resp = client.chat.completions.create(
                 model=ZHIPUAI_MODEL,
                 messages=[{"role": "user", "content": "ping"}],
                 max_tokens=5
             )
-            status["services"]["zhipuai"] = {"status": "ok", "model": ZHIPUAI_MODEL}
+            status["services"]["qwen"] = {"status": "ok", "model": ZHIPUAI_MODEL}
         else:
-            status["services"]["zhipuai"] = {"status": "warning", "message": "API Key未配置"}
+            status["services"]["qwen"] = {"status": "warning", "message": "API Key未配置"}
     except Exception as e:
-        status["services"]["zhipuai"] = {"status": "error", "message": str(e)[:100]}
+        status["services"]["qwen"] = {"status": "error", "message": str(e)[:100]}
 
     # 管理员检查
     from admin_auth import has_admin_users, get_all_admins

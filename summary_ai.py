@@ -4,7 +4,7 @@ AI文章总结模块 - 对已有内容生成110-180字摘要
 import sys
 sys.stdout.reconfigure(encoding="utf-8")
 import pymysql
-from zhipuai import ZhipuAI
+from openai import OpenAI
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 TIMEOUT = 8
@@ -12,7 +12,7 @@ TIMEOUT = 8
 def ai_summarize(title, content):
     """用质谱AI总结文章，110-180字"""
     from config_loader import ZHIPUAI_API_KEY, ZHIPUAI_API_BASE, ZHIPUAI_MODEL
-    client = ZhipuAI(api_key=ZHIPUAI_API_KEY, base_url=ZHIPUAI_API_BASE)
+    client = OpenAI(api_key=ZHIPUAI_API_KEY, base_url=ZHIPUAI_API_BASE)
     
     prompt = f"""请用110-180字概括以下健康文章的核心内容，语言精炼专业：
 

@@ -60,10 +60,10 @@ def get_db_conn_kwargs():
         "database": DB_NAME, "charset": "utf8mb4"
     }
 
-# ========== 智谱AI ==========
-ZHIPUAI_API_KEY = get("ZHIPUAI_API_KEY", "")
-ZHIPUAI_MODEL = get("ZHIPUAI_MODEL", "glm-4-plus")
-ZHIPUAI_API_BASE = get("ZHIPUAI_API_BASE", "https://open.bigmodel.cn/api/paas/v4")
+# ========== 大模型（阿里云通义千问，兼容层保留旧变量名） ==========
+ZHIPUAI_API_KEY = get("DASHSCOPE_API_KEY", get("ZHIPUAI_API_KEY", ""))
+ZHIPUAI_MODEL = get("QWEN_MODEL", get("ZHIPUAI_MODEL", "qwen-plus"))
+ZHIPUAI_API_BASE = get("QWEN_API_BASE", "https://dashscope.aliyuncs.com/compatible-mode/v1")
 
 # ========== Flask ==========
 FLASK_HOST = get("FLASK_HOST", "0.0.0.0")

@@ -1,4 +1,4 @@
-﻿"""
+"""
 健康养生建议自动生成模块
 每天18:00自动生成10条健康建议，每100条为一组存入数据库
 """
@@ -58,13 +58,13 @@ HEALTH_TOPICS = [
 def generate_tips(count=10):
     """使用GLM生成健康养生建议"""
     try:
-        from zhipuai import ZhipuAI
+        from openai import OpenAI
         from config_loader import ZHIPUAI_API_KEY, ZHIPUAI_API_BASE, ZHIPUAI_MODEL
         
         if not ZHIPUAI_API_KEY or ZHIPUAI_API_KEY == "":
             return generate_fallback_tips(count)
         
-        client = ZhipuAI(api_key=ZHIPUAI_API_KEY, base_url=ZHIPUAI_API_BASE)
+        client = OpenAI(api_key=ZHIPUAI_API_KEY, base_url=ZHIPUAI_API_BASE)
         
         import random
         topic = random.choice(HEALTH_TOPICS)

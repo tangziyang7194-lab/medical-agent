@@ -6,19 +6,20 @@ GLM-4.5 智能医学知识体
 import json
 import os
 import re
-from zhipuai import ZhipuAI
+from openai import OpenAI
 
 import os
 
 # ========== 质谱AI (智谱) 配置 ==========
 # 从环境变量读取 API Key（本地使用 .env，云端使用平台环境变量）
-API_KEY = os.environ.get("ZHIPUAI_API_KEY") or ""
-_MODEL = os.environ.get("ZHIPUAI_MODEL") or "glm-4-plus"
-# 可选：自定义API地址
-_API_BASE = os.environ.get("ZHIPUAI_API_BASE") or "https://open.bigmodel.cn/api/paas/v4"
+# 阿里云通义千问 (DashScope) 配置
+API_KEY = os.environ.get("DASHSCOPE_API_KEY") or os.environ.get("QWEN_API_KEY") or ""
+_MODEL = os.environ.get("QWEN_MODEL") or "qwen-plus"
+# 千问 OpenAI 兼容接口
+_API_BASE = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
 
-_MODEL = "glm-4-plus"  # 使用 glm-4-plus，若需 glm-4.5 请改为对应模型名
+_MODEL = "qwen-plus"  # 通义千问
 
 _client = None
 
@@ -26,7 +27,7 @@ _client = None
 def get_client():
     global _client
     if _client is None:
-        _client = ZhipuAI(api_key=API_KEY, base_url=_API_BASE)
+        _client = OpenAI(api_key=API_KEY, base_url=_API_BASE)
     return _client
 
 
@@ -71,7 +72,7 @@ SYSTEM_PROMPT = """你是一位经验丰富的三甲医院主治医师，精通�
 
 
 def call_glm(system_prompt: str, user_message: str, temperature: float = 0.3) -> str:
-    """调用 GLM-4.5 API（含案例库RAG增强）"""
+    """调用通义千问 API（含案例库RAG增强）"""
     # 向量语义检索相似历史案例（RAG增强）
     similar_cases = []
     try:
@@ -107,7 +108,7 @@ def call_glm(system_prompt: str, user_message: str, temperature: float = 0.3) ->
 
 
 def parse_json_from_response(text: str) -> dict:
-    """从GLM返回文本中提取JSON"""
+    """从模型返回文本中提取JSON"""
     # 尝试直接解析
     text = text.strip()
     if text.startswith("```"):
