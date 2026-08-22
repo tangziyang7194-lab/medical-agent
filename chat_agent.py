@@ -10,13 +10,20 @@ from openai import OpenAI
 
 # ========== 质谱AI (智谱) 配置 ==========
 # 从环境变量读取 API Key（本地使用 .env，云端使用平台环境变量）
-# 阿里云通义千问 (DashScope) 配置
-API_KEY = os.environ.get("DASHSCOPE_API_KEY") or os.environ.get("QWEN_API_KEY") or ""
-_MODEL = os.environ.get("QWEN_MODEL") or "qwen-plus"
-_API_BASE = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+# DeepSeek 配置
+# 确保 .env 已加载（从环境变量读取 Key）
+try:
+    from config_loader import load_env
+    load_env()
+except ImportError:
+    pass
+
+API_KEY = os.environ.get("DEEPSEEK_API_KEY") or ""
+_MODEL = os.environ.get("DEEPSEEK_MODEL") or "deepseek-v4-flash"
+_API_BASE = os.environ.get("DEEPSEEK_API_BASE") or "https://api.deepseek.com/v1"
 
 
-_MODEL = "qwen-plus"
+_MODEL = "deepseek-v4-flash"
 
 _client = None
 

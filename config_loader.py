@@ -60,10 +60,10 @@ def get_db_conn_kwargs():
         "database": DB_NAME, "charset": "utf8mb4"
     }
 
-# ========== 大模型（阿里云通义千问，兼容层保留旧变量名） ==========
-ZHIPUAI_API_KEY = get("DASHSCOPE_API_KEY", get("ZHIPUAI_API_KEY", ""))
-ZHIPUAI_MODEL = get("QWEN_MODEL", get("ZHIPUAI_MODEL", "qwen-plus"))
-ZHIPUAI_API_BASE = get("QWEN_API_BASE", "https://dashscope.aliyuncs.com/compatible-mode/v1")
+# ========== 大模型（DeepSeek，兼容层保留旧变量名） ==========
+ZHIPUAI_API_KEY = get("DEEPSEEK_API_KEY", get("ZHIPUAI_API_KEY", ""))
+ZHIPUAI_MODEL = get("DEEPSEEK_MODEL", get("ZHIPUAI_MODEL", "deepseek-v4-flash"))
+ZHIPUAI_API_BASE = get("DEEPSEEK_API_BASE", "https://api.deepseek.com/v1")
 
 # ========== Flask ==========
 FLASK_HOST = get("FLASK_HOST", "0.0.0.0")
