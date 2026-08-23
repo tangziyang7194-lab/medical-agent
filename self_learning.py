@@ -257,7 +257,7 @@ def run_learning_cycle(target_count: int = 200) -> dict:
 
     stats = {"total": 0, "saved": 0, "skipped": 0, "errors": 0}
 
-    # 并行生成（同时4个请求）
+    # 并行生成（同时8个请求，加速大数据收集）
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
     def generate_and_save(domain):
@@ -273,7 +273,7 @@ def run_learning_cycle(target_count: int = 200) -> dict:
     while stats["saved"] < target_count:
         # 每次并行处理4个领域
         batch_domains = DOMAINS * 3  # 重复循环直到够数
-        with ThreadPoolExecutor(max_workers=4) as executor:
+        with ThreadPoolExecutor(max_workers=8) as executor:
             futures = {executor.submit(generate_and_save, d): d for d in batch_domains}
             for future in as_completed(futures):
                 if stats["saved"] >= target_count:
