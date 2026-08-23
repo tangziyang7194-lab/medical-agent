@@ -131,13 +131,15 @@ def save_case_to_db(case_data: dict) -> bool:
             import random
             source = random.choice(CASE_SOURCES)
 
+            # 去重检查（实时监测）：关键词+诊断 或 症状文本 与库中已有病例重复则跳过
             cur.execute(
-                "SELECT id FROM learned_cases WHERE symptoms_keywords=%s AND diagnosis=%s",
-                (keywords[:100], diagnosis[:100])
+                "SELECT id FROM learned_cases WHERE symptoms_keywords=%s AND diagnosis=%s OR case_text=%s",
+                (keywords[:100], diagnosis[:100], symptoms)
             )
             existing = cur.fetchone()
             if existing:
                 conn.close()
+                print(f"  ⏭ 重复跳过[{diagnosis[:25] or symptoms[:25]}]")
                 return False  # 重复跳过
 
             # 清理异常数据（空值、过短等）
