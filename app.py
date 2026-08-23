@@ -1211,7 +1211,7 @@ def admin_health():
     except Exception as e:
         status["services"]["chromadb"] = {"status": "error", "message": str(e)[:100]}
 
-    # GLM API检查
+    # DeepSeek API检查
     try:
         from openai import OpenAI
         from config_loader import ZHIPUAI_API_KEY, ZHIPUAI_API_BASE, ZHIPUAI_MODEL

@@ -10,7 +10,7 @@ from openai import OpenAI
 
 import os
 
-# ========== DeepSeek AI (智谱) 配置 ==========
+# ========== DeepSeek AI 配置 ==========
 # 从环境变量读取 API Key（本地使用 .env，云端使用平台环境变量）
 # DeepSeek 配置
 # 确保 .env 已加载（从环境变量读取 Key）
