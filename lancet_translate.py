@@ -1,6 +1,6 @@
 """
 柳叶刀文章翻译模块 - 后台异步翻译
-采集完成后对新文章进行质谱AI中文翻译
+采集完成后对新文章进行DeepSeek AI中文翻译
 """
 import sys, pymysql
 from openai import OpenAI

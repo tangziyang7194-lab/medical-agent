@@ -56,7 +56,7 @@ HEALTH_TOPICS = [
 ]
 
 def generate_tips(count=10):
-    """使用GLM生成健康养生建议"""
+    """使用DeepSeek生成健康养生建议"""
     try:
         from openai import OpenAI
         from config_loader import ZHIPUAI_API_KEY, ZHIPUAI_API_BASE, ZHIPUAI_MODEL

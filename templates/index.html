@@ -123,7 +123,7 @@
     <div class="hero">
         <div class="logo">🏥</div>
         <div class="title">AI 导诊系统</div>
-        <div class="subtitle">GLM-4.5 智能医学体 · 样例库 {{ case_count }} 例</div>
+        <div class="subtitle">DeepSeek V4 智能医学体 · 样例库 {{ case_count }} 例</div>
     </div>
 
     <div class="btn-group">
@@ -177,7 +177,7 @@
         </div>
     {% endif %}
 
-    <div class="powered">Powered by GLM-4.5 · Hermes Agent</div>
+    <div class="powered">Powered by DeepSeek V4 · Hermes Agent</div>
 </div>
 
 <!-- 弹窗 -->
@@ -241,7 +241,7 @@ function showCases(cases, deptName) {
             html += '  </div>';
             html += '  <div class="case-symp">📝 ' + (c.symptom || '无描述') + '</div>';
             html += '  <div class="case-meta">';
-            html += '    🔗 <a href="' + (c.source_url || '#') + '" target="_blank">来源: GLM-4.5</a>';
+            html += '    🔗 <a href="' + (c.source_url || '#') + '" target="_blank">来源: DeepSeek V4</a>';
             html += '    <span style="margin-left:8px;color:#999;">ID: ' + (c.id || '-') + '</span>';
             html += '  </div>';
             html += '</div>';

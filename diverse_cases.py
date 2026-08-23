@@ -1,6 +1,6 @@
 """
 多样化病例数据源
-替代单一质谱AI，提供来自多种来源的病例数据
+替代单一DeepSeek AI，提供来自多种来源的病例数据
 """
 import json
 from datetime import datetime

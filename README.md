@@ -11,11 +11,11 @@ license: mit
 
 # 🏥 AI 导诊系统
 
-一个基于 GLM-4.5 大模型的智能医疗问诊系统，支持用户端和管理端双入口，具备完整的问诊流程、病历管理、健康建议等功能。
+一个基于 DeepSeek V4 大模型的智能医疗问诊系统，支持用户端和管理端双入口，具备完整的问诊流程、病历管理、健康建议等功能。
 
 ## ✨ 功能特点
 
-- 🤖 **AI 智能问诊** - 基于 GLM-4.5 大模型
+- 🤖 **AI 智能问诊** - 基于 DeepSeek V4 大模型
 - 🔍 **向量搜索** - ChromaDB 向量数据库
 - 📋 **5步问诊流程** - 结构化问诊
 - 📊 **病历管理** - 完整的病历记录
@@ -60,7 +60,7 @@ chmod +x deploy_cloud.sh
 ## 📋 前置条件
 
 - Python 3.8+
-- 智谱 AI API Key（从 https://open.bigmodel.cn 获取）
+- DeepSeek AI API Key（从 https://open.bigmodel.cn 获取）
 
 ## 🔧 配置
 
@@ -115,7 +115,7 @@ medical_agent/
 ## 🎯 技术栈
 
 - **后端**: Flask, Python 3.11
-- **AI 模型**: GLM-4.5 (智谱 AI)
+- **AI 模型**: DeepSeek V4 (DeepSeek AI)
 - **向量数据库**: ChromaDB
 - **关系数据库**: MySQL
 - **前端**: HTML5, JavaScript, Bootstrap
@@ -143,7 +143,7 @@ MIT License
 
 ## 🎉 致谢
 
-- 智谱 AI - GLM-4.5 大模型
+- DeepSeek AI - DeepSeek V4 大模型
 - ChromaDB - 向量数据库
 - Flask - Web 框架
 

@@ -64,7 +64,7 @@ python generate_static.py
 - 自动扩容
 
 **❌ 缺点**：
-- 不能运行 Python（后端无法使用 GLM-4.5）
+- 不能运行 Python（后端无法使用 DeepSeek V4）
 - 只能静态展示
 
 ---
@@ -229,7 +229,7 @@ chmod +x deploy.sh
 ### 个人开发者（免费）
 
 **首选**：Render + Vercel
-- Render 运行后端（GLM-4.5）
+- Render 运行后端（DeepSeek V4）
 - Vercel 静态展示前端
 - 总费用：免费
 

@@ -10,7 +10,7 @@ HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/
 TIMEOUT = 8
 
 def ai_summarize(title, content):
-    """用质谱AI总结文章，110-180字"""
+    """用DeepSeek AI总结文章，110-180字"""
     from config_loader import ZHIPUAI_API_KEY, ZHIPUAI_API_BASE, ZHIPUAI_MODEL
     client = OpenAI(api_key=ZHIPUAI_API_KEY, base_url=ZHIPUAI_API_BASE)
     

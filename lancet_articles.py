@@ -1,6 +1,6 @@
 """
 PubMed医学文献采集模块
-每天18:10自动采集1篇最新中文医学文献，用质谱AI生成总结和翻译
+每天18:10自动采集1篇最新中文医学文献，用DeepSeek AI生成总结和翻译
 """
 import sys, json, re, pymysql, requests, time
 from datetime import datetime

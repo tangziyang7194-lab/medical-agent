@@ -1,7 +1,7 @@
 """
 自我深度学习模块
 每2天从网上获取50条患者病历进行自我学习
-使用 GLM-4.5 生成高质量合成病例并建立案例库
+使用 DeepSeek V4 生成高质量合成病例并建立案例库
 """
 
 import json
@@ -225,7 +225,7 @@ def run_learning_cycle(target_count: int = 200) -> dict:
     执行一次学习周期：每天12:00爬取200条
     """
     print(f"\n{'='*60}")
-    print(f"  🤖 GLM-4.5 自我深度学习开始")
+    print(f"  🤖 DeepSeek V4 自我深度学习开始")
     print(f"  目标: 并行生成 {target_count} 条高质量病例")
     print(f"  时间: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     print(f"{'='*60}\n")
@@ -395,7 +395,7 @@ def get_learning_stats() -> dict:
 if __name__ == "__main__":
     print("""
     ╔══════════════════════════════════════╗
-    ║   🤖 GLM-4.5 自我深度学习系统        ║
+    ║   🤖 DeepSeek V4 自我深度学习系统        ║
     ║   使用AI生成病例 → 建立案例库 → 持续学习 ║
     ╚══════════════════════════════════════╝
     """)

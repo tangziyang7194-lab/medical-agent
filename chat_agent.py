@@ -8,7 +8,7 @@ import os
 import re
 from openai import OpenAI
 
-# ========== 质谱AI (智谱) 配置 ==========
+# ========== DeepSeek AI 配置 ==========
 # 从环境变量读取 API Key（本地使用 .env，云端使用平台环境变量）
 # DeepSeek 配置
 # 确保 .env 已加载（从环境变量读取 Key）
@@ -148,7 +148,7 @@ def generate_report_from_chat(messages: list, patient_info: dict = None) -> str:
 
     lines += [
         "-" * 60,
-        "  本报告由AI智能体（GLM-4.5）自动生成，仅供参考。",
+        "  本报告由AI智能体（DeepSeek V4）自动生成，仅供参考。",
         "=" * 60,
     ]
 
