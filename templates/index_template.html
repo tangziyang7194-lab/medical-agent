@@ -156,9 +156,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
   .home-layout { flex-direction: column; }
   .home-right { width: 100%; position: static; max-height: none; }
 }
+
+/* ====== 浅色主题（🌓 切换） ====== */
+body.light-theme { background: #f5f3ff; color: #333; }
+body.light-theme .container { background: transparent; }
+body.light-theme .hero .title { color: #1a1a2e; }
+body.light-theme .hero .subtitle { color: #64748b; }
+body.light-theme .btn-group .btn { border-color: #c3cbfd; color: #4a5ab8; background: #fff; }
+body.light-theme .btn-group .btn-primary { background: #667eea; color: #fff; }
+body.light-theme .powered { color: #94a3b8; }
+body.light-theme .pg-card, body.light-theme .chat-box, body.light-theme .chat-header { background: #fff; border-color: #e8e8f0; }
+body.light-theme .chat-box { color: #333; }
+body.light-theme .chat-header { color: #333; }
+body.light-theme .chat-input textarea { background: #fff; color: #333; border-color: #d5d5e5; }
+body.light-theme .case-diag { color: #333; }
+body.light-theme .dept-item, body.light-theme .modal-case { background: #fff; color: #333; }
+body.light-theme .dept-item:hover { background: #f5f3ff; }
 </style>
 </head>
 <body>
+<button onclick="toggleTheme()" id="themeBtn" title="切换深色/浅色主题" style="position:fixed;top:14px;right:14px;z-index:9999;padding:8px 12px;border:none;border-radius:8px;background:rgba(99,102,241,0.2);color:#a5b4fc;font-size:13px;cursor:pointer;">🌓</button>
 
 <div class="container" id="pageHome">
   <div class="home-layout">
@@ -213,7 +230,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Micr
   </div>
   <div class="chat-box" id="chatBox"></div>
   <div class="chat-input" id="chatInput">
-    <textarea id="msgInput" rows="1" placeholder="描述症状..." onkeydown="if(event.key=='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}"></textarea>
+    <textarea id="msgInput" rows="1" placeholder="描述症状...（支持 🎤 语音输入）" onkeydown="if(event.key=='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}"></textarea>
+    <button class="send-btn" id="voiceBtn" onclick="startVoice()" title="语音输入" style="margin-right:4px;background:#22c55e;">🎤</button>
     <button class="send-btn" id="sendBtn" onclick="sendMsg()">↵</button>
   </div>
 </div>
@@ -299,6 +317,13 @@ const FALLBACK_CASES = [
 ];
 
 // ====== 初始化 ======
+{% if is_cloud %}window.__IS_CLOUD__ = true;{% else %}window.__IS_CLOUD__ = false;{% endif %}
+// 🌓 主题切换
+function toggleTheme() {
+  document.body.classList.toggle('light-theme');
+  localStorage.setItem('theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
+}
+(function(){ if (localStorage.getItem('theme') === 'light') document.body.classList.add('light-theme'); })();
 (function init() {
   {% if is_cloud %}
   // 云端精简模式：无数据库/样例库，直接显示首页
@@ -441,8 +466,8 @@ function closeModal() {
 // ====== 页面切换 ======
 function showHome() { hideAll(); document.getElementById('pageHome').classList.remove('hidden'); renderHome(); }
 function showChat() { hideAll(); document.getElementById('pageChat').classList.remove('hidden'); initChat(); }
-function showRecords() { hideAll(); document.getElementById('pageRecords').classList.remove('hidden'); renderRecords(); }
-function hideAll() { ['pageHome','pageChat','pageRecords'].forEach(id => document.getElementById(id).classList.add('hidden')); }
+function showRecords() { hideAll(); if (!document.getElementById('pageRecords')) { return; } document.getElementById('pageRecords').classList.remove('hidden'); renderRecords(); }
+function hideAll() { ['pageHome','pageChat','pageRecords'].forEach(id => { var el = document.getElementById(id); if (el) el.classList.add('hidden'); }); }
 
 function toggleNext(el) {
   let next = el.nextElementSibling;
@@ -454,8 +479,7 @@ function toggleNext(el) {
 }
 
 // ====== 对话问诊 ======
-// 前端不存放 API Key，所有 AI 请求通过后端代理
-const API_URL = "/api/chat";
+// AI 对话走后端代理 /api/chat（DeepSeek），key 保存在服务器 .env，不暴露在浏览器
 
 let chatMessages = [];
 
@@ -515,28 +539,20 @@ function sendMsg() {
 
   let userTurns = chatMessages.filter(m => m.role === 'user').length;
 
-  // 对话系统提示
-  let systemMsg = {
-    role: 'system',
-    content: '你是一位资深主治医师，正在在线问诊。语气温和专业，每次回复不超过150字，每次只问1-2个问题。当收集到足够信息（至少3轮对话后）可以给出诊断建议时，在回复末尾添加【READY】标记。'
-  };
+  // 对话走后端代理（DeepSeek），无需前端传 API key
+  let payload = { messages: chatMessages };
 
-  // 通过后端代理请求（前端不携带 API Key）
-  fetch(API_URL, {
+  fetch('/api/chat', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({messages: [systemMsg, ...chatMessages]})
+    body: JSON.stringify(payload)
   })
   .then(r => r.json())
   .then(data => {
     hideTyping();
     document.getElementById('sendBtn').disabled = false;
-    if (data.error) {
-      addMsg('抱歉，暂时无法回复。', 'bot');
-      return;
-    }
     let reply = data.reply || '抱歉，暂时无法回复。';
-    let isReady = data.ready === true;
+    let isReady = data.ready && userTurns >= 3;
     let clean = reply.replace('【READY】','').trim();
     addMsg(clean, 'bot');
     chatMessages.push({role:'assistant', content: clean});
@@ -552,7 +568,13 @@ function sendMsg() {
         let symptomText = chatMessages.filter(m=>m.role==='user').map(m=>m.content).join(', ');
         let report = generateReport(symptomText, chatMessages.slice(-1)[0]?.content||'');
         saveRecord(report);
-        showRecords();
+        if (window.__IS_CLOUD__) {
+          // 云端精简版：直接弹窗展示报告并支持导出
+          downloadReport(report);
+        } else {
+          showRecords();
+          showSimilarCases(symptomText);
+        }
       };
       document.getElementById('chatBox').appendChild(reportBtn);
       document.getElementById('chatInput').classList.remove('active');
@@ -628,6 +650,105 @@ function exportWord(id) {
     a.remove();
     URL.revokeObjectURL(url);
   }).catch(err => alert('导出失败：' + err.message));
+}
+
+// 获取报告文本（localStorage 或数据库记录）
+function getReportById(id) {
+  let arr = [];
+  try { arr = JSON.parse(localStorage.getItem('medical_patients')) || []; } catch(e) {}
+  let rec = arr.find(x => x.id === id);
+  if (!rec && window._dbReports && window._dbReports[id]) {
+    rec = { report: window._dbReports[id] };
+  }
+  return rec ? (rec.report || '') : '';
+}
+
+// 通用下载（POST 后端返回文件）
+function downloadBlob(url, payload, filename) {
+  fetch(url, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  }).then(r => {
+    if (!r.ok) return r.json().then(d => { throw new Error(d.error || '导出失败'); });
+    return r.blob();
+  }).then(blob => {
+    let u = URL.createObjectURL(blob);
+    let a = document.createElement('a');
+    a.href = u; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(u);
+  }).catch(err => alert('失败：' + err.message));
+}
+
+// 📕 导出 PDF
+function exportPDF(id) {
+  let report = getReportById(id);
+  if (!report) { alert('未找到报告内容'); return; }
+  downloadBlob('/api/export/pdf', {report: report}, 'AI诊断报告_' + id + '.pdf');
+}
+
+// 📧 发送邮箱（配置SMTP后自动发送）
+function exportEmail(id) {
+  let report = getReportById(id);
+  if (!report) { alert('未找到报告内容'); return; }
+  let email = prompt('📧 请输入收件邮箱：');
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert('邮箱格式不正确'); return; }
+  fetch('/api/export/email', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({email: email, report: report})
+  }).then(r => r.json()).then(d => {
+    alert(d.success ? '✅ 邮件已发送至 ' + email : (d.message || d.error || '发送失败'));
+  }).catch(err => alert('发送失败：' + err.message));
+}
+
+// 云端报告弹窗展示 + 导出
+function downloadReport(report) {
+  window.__lastReport = report;
+  document.getElementById('modalTitle').textContent = '📋 AI 诊断报告';
+  document.getElementById('modalBody').innerHTML =
+    '<div style="font-size:12px;color:#888;margin-bottom:10px;">报告已生成，选择导出格式：</div>' +
+    '<button onclick="downloadBlob(\'/api/export/word\', {report: window.__lastReport}, \'AI诊断报告.docx\')" style="padding:7px 14px;background:#667eea;color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer;margin-right:8px;">📄 导出 Word</button>' +
+    '<button onclick="downloadBlob(\'/api/export/pdf\', {report: window.__lastReport}, \'AI诊断报告.pdf\')" style="padding:7px 14px;background:#ef4444;color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer;">📕 导出 PDF</button>' +
+    '<pre style="white-space:pre-wrap;font-size:12px;color:#555;margin-top:14px;max-height:40vh;overflow-y:auto;background:#f8f8fa;padding:12px;border-radius:8px;">' + report.replace(/</g, '&lt;') + '</pre>';
+  openModal();
+}
+
+// 📊 相似病例推荐（本地向量库特供，云端返回空自动隐藏）
+function showSimilarCases(symptomText) {
+  fetch('/api/cases/similar', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({query: symptomText.slice(0, 100)})
+  }).then(r => r.json()).then(d => {
+    if (!d.success || !d.results || d.results.length === 0) return;
+    let html = '<div style="margin-top:14px;padding:12px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:10px;">' +
+      '<div style="font-size:13px;font-weight:600;color:#a5b4fc;margin-bottom:8px;">📊 历史相似病例推荐</div>';
+    d.results.forEach(c => {
+      html += '<div style="font-size:12px;color:#cbd5e1;padding:6px 0;border-bottom:1px dashed rgba(99,102,241,0.15);">' +
+        '🏥 ' + (c.department||'未知') + ' · 🩺 <b>' + (c.diagnosis||'') + '</b>' +
+        '<span style="color:#818cf8;font-size:11px;margin-left:8px;">' + (c.similarity != null ? (c.similarity*100).toFixed(0)+'%' : '') + '</span>' +
+        '<div style="color:#64748b;font-size:11px;margin-top:2px;">📝 ' + (c.symptoms||'').substring(0,60) + '...</div></div>';
+    });
+    html += '</div>';
+    document.getElementById('chatBox').insertAdjacentHTML('beforeend', html);
+  }).catch(() => {});
+}
+
+// 🎤 语音输入（Web Speech API）
+function startVoice() {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert('当前浏览器不支持语音输入，请使用 Chrome/Edge'); return; }
+  var rec = new SR();
+  rec.lang = 'zh-CN';
+  rec.interimResults = false;
+  rec.onresult = function(e) {
+    var text = e.results[0][0].transcript;
+    document.getElementById('msgInput').value += text;
+  };
+  rec.onerror = function(e) { alert('语音识别失败：' + (e.error || '未知错误')); };
+  rec.start();
 }
 
 function saveRecord(report) {
@@ -739,7 +860,9 @@ function renderPatientList(patients) {
       <div style="font-size:13px;color:#555;margin:4px 0;">🏥 ${p.dept||'未知科室'}</div>
       <div style="font-size:12px;color:#666;white-space:pre-wrap;max-height:100px;overflow-y:auto;">${p.report?.substring(0,200)||'无'}</div>
       <div style="margin-top:8px;">
-        <button onclick="exportWord(${p.id})" style="padding:5px 12px;background:#667eea;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;">📄 导出 Word</button>
+        <button onclick="exportWord(${p.id})" style="padding:5px 12px;background:#667eea;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;">📄 Word</button>
+        <button onclick="exportPDF(${p.id})" style="padding:5px 12px;background:#ef4444;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;">📕 PDF</button>
+        <button onclick="exportEmail(${p.id})" style="padding:5px 12px;background:#22c55e;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;">📧 邮箱</button>
       </div>
     </div>`;
   });

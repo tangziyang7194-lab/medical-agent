@@ -133,6 +133,7 @@
             .topbar h1 span { display: none; }
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 </head>
 <body>
     <div class="topbar">
@@ -144,7 +145,8 @@
             <a href="/admin/register" style="color:#4ade80;">📝 添加管理员</a>
             <a href="/admin/health">🩺 健康</a>
             <a href="/guide#admin" target="_blank" style="color:#a5b4fc;border:1px solid rgba(165,180,252,0.4);">📖 使用说明</a>
-            <a href="/api/admin/export/cases" style="color:#fbbf24;">📥 导出病例</a>
+            <a href="/api/admin/export/cases" style="color:#fbbf24;">📥 导出CSV</a>
+            <a href="/api/admin/export/excel" style="color:#4ade80;">📊 导出Excel</a>
             <a href="/admin/logout" class="logout">🚪 退出</a>
         </div>
     </div>
@@ -168,6 +170,25 @@
                 <div class="stat-icon">👤</div>
                 <div class="stat-number">{{ stats.patients }}</div>
                 <div class="stat-label">患者总数 (patients)</div>
+            </div>
+        </div>
+
+        <!-- 📈 数据可视化（本地特供） -->
+        <div class="card">
+            <div class="card-header"><span>📈 数据可视化</span></div>
+            <div class="card-body" style="display:flex;flex-wrap:wrap;gap:12px;">
+                <div style="flex:1;min-width:280px;">
+                    <div style="font-size:13px;font-weight:600;margin-bottom:6px;color:#667eea;">🏥 科室分布 TOP10</div>
+                    <div id="chartDept" style="height:260px;"></div>
+                </div>
+                <div style="flex:1;min-width:280px;">
+                    <div style="font-size:13px;font-weight:600;margin-bottom:6px;color:#667eea;">⚠️ 严重度分布</div>
+                    <div id="chartSeverity" style="height:260px;"></div>
+                </div>
+            </div>
+            <div class="card-body" style="margin-top:8px;">
+                <div style="font-size:13px;font-weight:600;margin-bottom:6px;color:#667eea;">📅 近30天学习趋势</div>
+                <div id="chartTrend" style="height:240px;"></div>
             </div>
         </div>
 
@@ -602,7 +623,12 @@
                 if (data.success) {
                     document.getElementById('vectorStatus').innerHTML = '<span style="color:#d93025;">🗑 向量库已清空</span>';
                     loadVectorStats();
+                } else {
+                    document.getElementById('vectorStatus').innerHTML = '<span style="color:#d93025;">❌ 清空失败：' + (data.error||'未知错误') + '</span>';
                 }
+            })
+            .catch(function(err){
+                document.getElementById('vectorStatus').innerHTML = '<span style="color:#d93025;">❌ 清空失败，请确认服务已重启</span>';
             });
     }
 
@@ -645,6 +671,41 @@
 
     // 页面加载时加载向量统计
     loadVectorStats();
+
+    // 📈 可视化图表
+    function loadCharts() {
+        fetch('/api/admin/stats/charts').then(function(r){return r.json()}).then(function(d){
+            if (!d.success || typeof echarts === 'undefined') return;
+            var colorSeverity = {red:'#ef4444', yellow:'#f59e0b', green:'#22c55e'};
+            // 科室分布（横向柱状图）
+            var c1 = echarts.init(document.getElementById('chartDept'));
+            c1.setOption({
+                tooltip: {trigger:'axis'}, grid: {left:80, right:20, top:10, bottom:20},
+                xAxis: {type:'value'}, yAxis: {type:'category', inverse:true, data: d.dept.map(function(x){return x.name})},
+                series: [{type:'bar', data: d.dept.map(function(x){return x.value}), itemStyle: {color:'#667eea', borderRadius:[0,4,4,0]}, barMaxWidth:18}]
+            });
+            // 严重度分布（环形图）
+            var c2 = echarts.init(document.getElementById('chartSeverity'));
+            c2.setOption({
+                tooltip: {trigger:'item'},
+                series: [{
+                    type:'pie', radius:['45%','70%'], center:['50%','55%'],
+                    data: d.severity.map(function(x){return {name:x.name, value:x.value, itemStyle:{color:colorSeverity[x.name]||'#94a3b8'}}}),
+                    label: {formatter:'{b}: {c}'}
+                }]
+            });
+            // 学习趋势（折线图）
+            var c3 = echarts.init(document.getElementById('chartTrend'));
+            c3.setOption({
+                tooltip: {trigger:'axis'}, grid: {left:40, right:20, top:20, bottom:30},
+                xAxis: {type:'category', data: d.trend.map(function(x){return (x.date||'').substring(5)})},
+                yAxis: {type:'value'},
+                series: [{type:'line', smooth:true, data: d.trend.map(function(x){return x.count}), areaStyle:{opacity:0.15}, itemStyle:{color:'#764ba2'}}]
+            });
+            window.addEventListener('resize', function(){ c1.resize(); c2.resize(); c3.resize(); });
+        }).catch(function(){});
+    }
+    loadCharts();
 </script>
 </body>
 </html>

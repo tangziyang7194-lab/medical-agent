@@ -455,7 +455,7 @@ def index():
 @app.route('/mobile')
 def mobile():
     """移动端PWA页面"""
-    return send_file(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates', 'mobile.html'),
+    return send_file(r'C:\Users\30974\PycharmProjects\medical_agent\templates\mobile.html',
                      mimetype='text/html')
 
 
@@ -935,7 +935,7 @@ def run_learning():
         def _run():
             result = subprocess.run(
                 ['python', 'self_learning.py'],
-                cwd=os.path.dirname(os.path.abspath(__file__)),
+                cwd=r'C:\Users\30974\PycharmProjects\medical_agent',
                 capture_output=True, text=True, encoding='utf-8',
                 timeout=120)
             # 保存输出到日志
@@ -1160,6 +1160,127 @@ def export_word():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/api/cases/similar', methods=['POST'])
+@login_required
+def api_cases_similar():
+    """相似病例推荐（本地向量库特供，云端返回空）"""
+    try:
+        data = request.get_json() or {}
+        query = (data.get("query") or "").strip()
+        if not query:
+            return jsonify({"success": False, "error": "缺少查询内容"}), 400
+        if CLOUD_MODE:
+            return jsonify({"success": True, "results": []})
+        from vector_store import search_similar
+        return jsonify({"success": True, "results": search_similar(query, limit=3)})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/export/pdf', methods=['POST'])
+@login_required
+def export_pdf():
+    """AI 诊断报告导出为 PDF"""
+    try:
+        from email_pdf import generate_pdf
+        from datetime import datetime
+        data = request.get_json() or {}
+        text = (data.get("report") or "").strip()
+        if not text:
+            return jsonify({"error": "无报告内容"}), 400
+        fname = f"AI诊断报告_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        path = generate_pdf(text, "在线咨询")
+        return send_file(path, as_attachment=True, download_name=fname, mimetype="application/pdf")
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/export/email', methods=['POST'])
+@login_required
+def export_email():
+    """报告发送到邮箱（配置SMTP后自动发送，否则提示保存路径）"""
+    try:
+        from email_pdf import generate_pdf, send_report_email
+        data = request.get_json() or {}
+        email = (data.get("email") or "").strip()
+        text = (data.get("report") or "").strip()
+        if not email or not text:
+            return jsonify({"success": False, "error": "缺少邮箱或报告内容"}), 400
+        path = generate_pdf(text, "在线咨询")
+        cfg = get_smtp_config()
+        ok, msg = send_report_email(email, path, cfg.get('email', ''), cfg.get('password', ''))
+        return jsonify({"success": ok, "message": msg})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/admin/export/excel')
+@admin_required_api
+def admin_export_excel():
+    """导出病例数据为 Excel (.xlsx)"""
+    try:
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment
+        import pymysql
+        from config_loader import get_db_conn_kwargs
+        conn = pymysql.connect(**get_db_conn_kwargs())
+        with conn.cursor(pymysql.cursors.DictCursor) as cur:
+            cur.execute("SELECT id, case_text AS symptom, symptoms_keywords AS keywords, department, severity, diagnosis, source, year, month, project_group FROM learned_cases ORDER BY id DESC")
+            rows = cur.fetchall()
+        conn.close()
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "病例数据"
+        headers = ["ID", "症状", "关键词", "科室", "严重度", "诊断", "来源", "年份", "月份", "项目组"]
+        ws.append(headers)
+        for cell in ws[1]:
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.fill = PatternFill("solid", fgColor="667EEA")
+            cell.alignment = Alignment(horizontal="center")
+        for r in rows:
+            ws.append([r["id"], r["symptom"] or "", r["keywords"] or "", r["department"] or "",
+                       r["severity"] or "", r["diagnosis"] or "", r["source"] or "",
+                       r["year"] or "", r["month"] or "", r["project_group"] or ""])
+        for col in ws.columns:
+            vals = [c.value for c in col if c.value is not None]
+            width = min(max(len(str(v)) for v in vals) + 2, 40) if vals else 12
+            ws.column_dimensions[col[0].column_letter].width = width
+        import io
+        buf = io.BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+        return send_file(buf, as_attachment=True, download_name="medical_cases.xlsx",
+                         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/admin/stats/charts')
+@admin_required_api
+def admin_stats_charts():
+    """可视化图表数据（科室分布/严重度分布/近30天学习趋势）"""
+    try:
+        import pymysql
+        from config_loader import get_db_conn_kwargs
+        conn = pymysql.connect(**get_db_conn_kwargs())
+        with conn.cursor(pymysql.cursors.DictCursor) as cur:
+            cur.execute("SELECT department, COUNT(*) AS cnt FROM learned_cases WHERE department IS NOT NULL AND department != '' GROUP BY department ORDER BY cnt DESC LIMIT 10")
+            dept = cur.fetchall()
+            cur.execute("SELECT severity, COUNT(*) AS cnt FROM learned_cases GROUP BY severity")
+            sev = cur.fetchall()
+            cur.execute("SELECT DATE(created_at) AS d, COUNT(*) AS cnt FROM learned_cases WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) GROUP BY DATE(created_at) ORDER BY d")
+            trend = cur.fetchall()
+        conn.close()
+        return jsonify({
+            "success": True,
+            "dept": [{"name": r["department"], "value": r["cnt"]} for r in dept],
+            "severity": [{"name": r["severity"], "value": r["cnt"]} for r in sev],
+            "trend": [{"date": str(r["d"]), "count": r["cnt"]} for r in trend],
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @app.route('/settings', methods=['GET', 'POST'])
 def settings():
     """SMTP 邮箱配置页"""
@@ -1225,7 +1346,7 @@ def admin_health():
     except Exception as e:
         status["services"]["chromadb"] = {"status": "error", "message": str(e)[:100]}
 
-    # DeepSeek API检查
+    # LLM API检查（DeepSeek）
     try:
         from openai import OpenAI
         from config_loader import ZHIPUAI_API_KEY, ZHIPUAI_API_BASE, ZHIPUAI_MODEL
@@ -1236,11 +1357,11 @@ def admin_health():
                 messages=[{"role": "user", "content": "ping"}],
                 max_tokens=5
             )
-            status["services"]["qwen"] = {"status": "ok", "model": ZHIPUAI_MODEL}
+            status["services"]["zhipuai"] = {"status": "ok", "model": ZHIPUAI_MODEL}
         else:
-            status["services"]["qwen"] = {"status": "warning", "message": "API Key未配置"}
+            status["services"]["zhipuai"] = {"status": "warning", "message": "API Key未配置"}
     except Exception as e:
-        status["services"]["qwen"] = {"status": "error", "message": str(e)[:100]}
+        status["services"]["zhipuai"] = {"status": "error", "message": str(e)[:100]}
 
     # 管理员检查
     from admin_auth import has_admin_users, get_all_admins
@@ -1356,6 +1477,23 @@ def start_case_learning_scheduler():
                 print("[病例学习] 12:00 开始爬取350条病例...")
                 result = run_learning_cycle(target_count=350)
                 print(f"[病例学习] 完成: {result}")
+                # 📝 生成每日学习报表（本地特供：存 medical_reports/）
+                try:
+                    import os
+                    from datetime import datetime
+                    report_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "medical_reports")
+                    os.makedirs(report_dir, exist_ok=True)
+                    fname = os.path.join(report_dir, f"学习报表_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md")
+                    with open(fname, "w", encoding="utf-8") as f:
+                        f.write(f"# 📊 病例学习报表\n\n")
+                        f.write(f"- 📅 时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                        f.write(f"- 🎯 目标: 350 条\n")
+                        f.write(f"- ✅ 实际保存: {result.get('saved', 0)} 条\n")
+                        f.write(f"- ⏭ 跳过重复: {result.get('skipped', 0)} 条\n")
+                        f.write(f"- ❌ 失败: {result.get('errors', 0)} 条\n")
+                    print(f"[学习报表] 已生成: {fname}")
+                except Exception as re_:
+                    print(f"[学习报表] 生成失败: {re_}")
             except Exception as e:
                 print(f"[病例学习] 失败: {e}")
 
