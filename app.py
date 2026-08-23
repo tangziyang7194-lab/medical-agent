@@ -335,12 +335,12 @@ def admin_api_cases():
                 cur.execute(f"""SELECT id, case_text AS symptom, diagnosis, department AS dept,
                       severity, source, source_url, project_group, symptoms_keywords AS keywords
                 FROM learned_cases WHERE (case_text LIKE %s OR diagnosis LIKE %s OR department LIKE %s{id_cond}){typical_cond}
-                ORDER BY id DESC LIMIT 2000""", tuple(params))
+                ORDER BY id DESC LIMIT 20000""", tuple(params))
             else:
                 where = f"WHERE CHAR_LENGTH(symptoms_keywords) >= 15 AND CHAR_LENGTH(case_text) >= 30" if typical else ""
                 cur.execute(f"""SELECT id, case_text AS symptom, diagnosis, department AS dept,
                       severity, source, source_url, project_group, symptoms_keywords AS keywords
-                FROM learned_cases {where} ORDER BY id DESC LIMIT 2000""")
+                FROM learned_cases {where} ORDER BY id DESC LIMIT 20000""")
             rows = cur.fetchall()
             for r in rows:
                 r["id"] = r["id"] or 0

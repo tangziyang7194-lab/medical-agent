@@ -478,7 +478,7 @@
     // ====== 样例库操作 ======
     var sampleAllData = [];
     var samplePage = 1;
-    var samplePerPage = 20;
+    var samplePerPage = 100;  // 每页100条，最多200页
 
     // 全局分页函数（内联 onclick 直接调用，避免作用域问题）
     window.sampleGo = function(p) { samplePage = p; renderSamplePage(); };
