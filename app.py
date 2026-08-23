@@ -1399,7 +1399,7 @@ import threading
 _health_tips_scheduler = None
 
 def start_case_learning_scheduler():
-    """启动定时任务：每天12:00爬取200条病例"""
+    """启动定时任务：每天12:00爬取350条病例"""
     import schedule
     import time
     from self_learning import run_learning_cycle
@@ -1407,14 +1407,14 @@ def start_case_learning_scheduler():
     def job():
         with app.app_context():
             try:
-                print("[病例学习] 12:00 开始爬取200条病例...")
-                result = run_learning_cycle(target_count=200)
+                print("[病例学习] 12:00 开始爬取350条病例...")
+                result = run_learning_cycle(target_count=350)
                 print(f"[病例学习] 完成: {result}")
             except Exception as e:
                 print(f"[病例学习] 失败: {e}")
 
     schedule.every().day.at("12:00").do(job)
-    print("[病例学习] 定时任务已注册：每天12:00爬取200条")
+    print("[病例学习] 定时任务已注册：每天12:00爬取350条")
 
     while True:
         schedule.run_pending()
