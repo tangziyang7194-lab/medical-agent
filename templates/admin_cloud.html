@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理端（云端精简版） - AI导诊系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: #f5f3ff; min-height: 100vh; color: #333;
+        }
+        .topbar {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white; padding: 14px 24px; display: flex;
+            justify-content: space-between; align-items: center;
+        }
+        .topbar h1 { font-size: 16px; }
+        .topbar h1 span { font-size: 11px; opacity: 0.8; margin-left: 8px; }
+        .topbar-right a {
+            color: white; text-decoration: none; font-size: 13px;
+            padding: 6px 12px; border-radius: 6px; margin-left: 8px;
+        }
+        .topbar-right a:hover { background: rgba(255,255,255,0.15); }
+        .topbar-right .logout { color: #ffd6d6; }
+        .container { max-width: 720px; margin: 0 auto; padding: 24px; }
+        .card {
+            background: white; border-radius: 14px; padding: 22px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08); margin-bottom: 16px;
+        }
+        .card-header {
+            font-size: 15px; font-weight: 700; margin-bottom: 14px;
+            padding-bottom: 10px; border-bottom: 2px solid #667eea;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .feature {
+            display: flex; align-items: center; gap: 14px;
+            padding: 14px; border: 1px solid #eee; border-radius: 10px;
+            margin-bottom: 10px; text-decoration: none; color: #333;
+            transition: all 0.2s;
+        }
+        .feature:hover { border-color: #667eea; background: #fafaff; }
+        .feature-icon { font-size: 28px; }
+        .feature-title { font-size: 14px; font-weight: 600; }
+        .feature-desc { font-size: 12px; color: #888; margin-top: 3px; }
+        .feature-arrow { margin-left: auto; color: #667eea; font-size: 14px; }
+        .note {
+            background: #eef1fe; border: 1px solid #c3cbfd; color: #4a5ab8;
+            border-radius: 10px; padding: 12px 16px; font-size: 12px; line-height: 1.8;
+        }
+        @media (max-width: 480px) {
+            .topbar { padding: 12px 14px; }
+            .container { padding: 14px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <h1>🔐 AI导诊系统管理端 <span>云端精简版</span></h1>
+        <div class="topbar-right">
+            <a href="/guide#admin" target="_blank">📖 使用说明</a>
+            <a href="/admin/logout" class="logout">🚪 退出</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <div class="card-header">⚙️ 可用功能</div>
+            <a href="/admin/health" class="feature">
+                <div class="feature-icon">🩺</div>
+                <div>
+                    <div class="feature-title">系统健康检查</div>
+                    <div class="feature-desc">环境配置总览 · AI模型状态</div>
+                </div>
+                <div class="feature-arrow">→</div>
+            </a>
+            <a href="/admin/register" class="feature">
+                <div class="feature-icon">📝</div>
+                <div>
+                    <div class="feature-title">添加管理员</div>
+                    <div class="feature-desc">注册新的管理员账号</div>
+                </div>
+                <div class="feature-arrow">→</div>
+            </a>
+        </div>
+
+        <div class="note">
+            ☁️ <b>云端精简版说明</b>：PythonAnywhere 免费版<b>不提供数据库</b>，因此病例管理、咨询记录、样例库、向量搜索、数据导出等依赖数据库的功能在云端不可用（本地完整版提供全部功能）。<br><br>
+            💡 用户端在云端仅提供：注册 / 登录 / AI 对话问诊。
+        </div>
+    </div>
+</body>
+</html>

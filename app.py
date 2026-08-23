@@ -26,6 +26,14 @@ RATE_LIMIT_PER_SEC = 10
 _rate_buckets = defaultdict(deque)
 _rate_last_cleanup = time.time()
 
+# ========== 云端精简模式（PythonAnywhere 免费版无数据库） ==========
+CLOUD_MODE = os.environ.get("CLOUD_MODE") == "1"
+
+
+@app.context_processor
+def inject_cloud_mode():
+    return {"is_cloud": CLOUD_MODE}
+
 
 @app.before_request
 def rate_limit_requests():
@@ -256,7 +264,9 @@ def admin_check_username():
 @app.route("/admin/dashboard")
 @admin_required
 def admin_dashboard():
-    """管理端面板"""
+    """管理端面板（云端精简模式：只显示不依赖数据库的功能）"""
+    if CLOUD_MODE:
+        return render_template("admin_cloud.html")
     stats = {"patients": 0, "cases": 0, "consultations": 0}
     cases = []
     consultations = []
