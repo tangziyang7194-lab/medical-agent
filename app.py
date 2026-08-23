@@ -208,26 +208,22 @@ def admin_logout():
 
 @app.route("/admin/register", methods=["GET", "POST"])
 def admin_register():
-    """管理员注册页"""
+    """管理员注册页（用户名+密码，与用户端注册方式一致）"""
     error = ""
     success = ""
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "").strip()
-        phone = request.form.get("phone", "").strip()
-        sms_code = request.form.get("sms_code", "").strip()
-        
-        if not sms_code:
-            error = "请输入短信验证码"
-        elif not verify_sms_code(phone, sms_code):
-            error = "验证码错误或已过期，请重新获取"
+        password2 = request.form.get("password2", "").strip()
+        if password != password2:
+            error = "两次密码不一致"
         else:
-            result = register_admin(username, password, phone)
+            result = register_admin(username, password, "")
             if result["success"]:
                 success = "注册成功！请使用您刚注册的账号登录"
             else:
                 error = result.get("error", "注册失败")
-    
+
     return render_template("admin_register.html", error=error, success=success,
                            has_users=has_admin_users())
 

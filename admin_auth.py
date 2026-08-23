@@ -103,16 +103,16 @@ def _save_users(users: list):
     with open(USERS_FILE, "w", encoding="utf-8") as f:
         json.dump(users, f, ensure_ascii=False, indent=2)
 
-def register_admin(username: str, password: str, phone: str) -> dict:
-    """注册管理员账号"""
+def register_admin(username: str, password: str, phone: str = "") -> dict:
+    """注册管理员账号（手机号可选，与用户端注册方式一致）"""
     # 参数验证
     if not username or len(username) < 2:
         return {"success": False, "error": "用户名至少2个字符"}
     if not password or len(password) < 6:
         return {"success": False, "error": "密码至少6个字符"}
-    if not phone or not validate_phone(phone):
+    if phone and not validate_phone(phone):
         return {"success": False, "error": "请输入有效的手机号"}
-    if not is_phone_verified(phone):
+    if phone and not is_phone_verified(phone):
         return {"success": False, "error": "手机号未验证，请先获取验证码"}
 
     users = _load_users()
@@ -133,7 +133,7 @@ def register_admin(username: str, password: str, phone: str) -> dict:
     for u in users:
         if u["username"] == username:
             return {"success": False, "error": "用户名已存在"}
-        if u["phone"] == phone:
+        if phone and u["phone"] == phone:
             return {"success": False, "error": "该手机号已注册"}
     
     # 创建用户
