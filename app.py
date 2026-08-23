@@ -322,10 +322,16 @@ def admin_api_cases():
                                password="123456", database="患者病历库", charset="utf8mb4")
         with conn.cursor(pymysql.cursors.DictCursor) as cur:
             if search:
-                cur.execute("""SELECT id, case_text AS symptom, diagnosis, department AS dept,
-                       severity, source, source_url, project_group, symptoms_keywords AS keywords
-                FROM learned_cases WHERE case_text LIKE %s OR diagnosis LIKE %s OR department LIKE %s
-                ORDER BY id DESC LIMIT 2000""", (f"%{search}%", f"%{search}%", f"%{search}%"))
+                # 支持 ID 查询：输入纯数字时精确匹配 id
+                id_cond = ""
+                params = [f"%{search}%", f"%{search}%", f"%{search}%"]
+                if search.isdigit():
+                    id_cond = " OR id = %s"
+                    params.append(int(search))
+                cur.execute(f"""SELECT id, case_text AS symptom, diagnosis, department AS dept,
+                      severity, source, source_url, project_group, symptoms_keywords AS keywords
+                FROM learned_cases WHERE case_text LIKE %s OR diagnosis LIKE %s OR department LIKE %s{id_cond}
+                ORDER BY id DESC LIMIT 2000""", tuple(params))
             else:
                 cur.execute("""SELECT id, case_text AS symptom, diagnosis, department AS dept,
                        severity, source, source_url, project_group, symptoms_keywords AS keywords

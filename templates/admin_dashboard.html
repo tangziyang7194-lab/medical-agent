@@ -295,6 +295,7 @@
                     <table>
                         <thead>
                             <tr>
+                                <th>序号</th>
                                 <th>ID</th>
                                 <th>症状</th>
                                 <th>诊断</th>
@@ -307,6 +308,7 @@
                         <tbody id="casesTable">
                             {% for c in cases %}
                             <tr id="case-row-{{ c.id }}">
+                                <td>{{ loop.index }}</td>
                                 <td>{{ c.id }}</td>
                                 <td title="{{ c.symptom }}">{{ c.symptom[:60] }}{% if c.symptom|length > 60 %}...{% endif %}</td>
                                 <td title="{{ c.diagnosis }}">{{ c.diagnosis[:40] }}{% if c.diagnosis|length > 40 %}...{% endif %}</td>
@@ -450,15 +452,16 @@
                 .then(function(data) {
                     var tbody = document.getElementById('casesTable');
                     if (!data || data.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="7"><div class="empty">未找到匹配的病例</div></td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="8"><div class="empty">未找到匹配的病例</div></td></tr>';
                         return;
                     }
                     var html = '';
-                    data.forEach(function(r) {
+                    data.forEach(function(r, idx) {
                         var sevClass = 'badge-green';
                         if (r.severity === 'red') sevClass = 'badge-red';
                         else if (r.severity === 'yellow') sevClass = 'badge-yellow';
                         html += '<tr id="case-row-' + r.id + '">';
+                        html += '<td>' + (idx + 1) + '</td>';
                         html += '<td>' + r.id + '</td>';
                         html += '<td title="' + (r.symptom || '') + '">' + (r.symptom || '').substring(0, 60) + ((r.symptom || '').length > 60 ? '...' : '') + '</td>';
                         html += '<td title="' + (r.diagnosis || '') + '">' + (r.diagnosis || '').substring(0, 40) + ((r.diagnosis || '').length > 40 ? '...' : '') + '</td>';
@@ -476,6 +479,12 @@
     var sampleAllData = [];
     var samplePage = 1;
     var samplePerPage = 20;
+
+    // 全局分页函数（内联 onclick 直接调用，避免作用域问题）
+    window.sampleGo = function(p) { samplePage = p; renderSamplePage(); };
+    window.samplePrev = function() { if (samplePage > 1) { samplePage--; renderSamplePage(); } };
+    window.sampleNext = function() { var pages = Math.ceil(sampleAllData.length / samplePerPage); if (samplePage < pages) { samplePage++; renderSamplePage(); } };
+    window.sampleLast = function() { samplePage = Math.ceil(sampleAllData.length / samplePerPage) || 1; renderSamplePage(); };
 
     function syncSamples() {
         document.getElementById('sampleTableWrap').innerHTML = '<div class="empty">⏳ 同步中...</div>';
@@ -498,10 +507,10 @@
         var pageData = sampleAllData.slice(start, end);
         renderSampleTable(pageData);
         document.getElementById('samplePageInfo').innerHTML = '共' + total + '条 第' + samplePage + '/' + pages + '页' +
-            ' <button onclick="samplePage=1;renderSamplePage()" style="padding:2px 8px;font-size:11px;">首页</button>' +
-            ' <button onclick="if(samplePage>1){samplePage--;renderSamplePage()}" style="padding:2px 8px;font-size:11px;">上一页</button>' +
-            ' <button onclick="if(samplePage<pages){samplePage++;renderSamplePage()}" style="padding:2px 8px;font-size:11px;">下一页</button>' +
-            ' <button onclick="samplePage=pages;renderSamplePage()" style="padding:2px 8px;font-size:11px;">末页</button>';
+            ' <button onclick="sampleGo(1)" style="padding:2px 8px;font-size:11px;">首页</button>' +
+            ' <button onclick="samplePrev()" style="padding:2px 8px;font-size:11px;">上一页</button>' +
+            ' <button onclick="sampleNext()" style="padding:2px 8px;font-size:11px;">下一页</button>' +
+            ' <button onclick="sampleLast()" style="padding:2px 8px;font-size:11px;">末页</button>';
     }
 
     function searchSamples2() {
@@ -549,10 +558,11 @@
     }
 
     function renderSampleTable(data) {
-        var html = '<table><thead><tr><th>ID</th><th>症状</th><th>诊断</th><th>科室</th><th>严重度</th><th>来源</th><th>操作</th></tr></thead><tbody>';
-        data.forEach(function(r){
+        var html = '<table><thead><tr><th>序号</th><th>ID</th><th>症状</th><th>诊断</th><th>科室</th><th>严重度</th><th>来源</th><th>操作</th></tr></thead><tbody>';
+        data.forEach(function(r, idx){
             var sev = r.severity === 'red' ? 'badge-red' : r.severity === 'yellow' ? 'badge-yellow' : 'badge-green';
             html += '<tr id="s-row-' + r.id + '">';
+            html += '<td>' + (idx + 1) + '</td>';
             html += '<td>' + (r.id||0) + '</td>';
             html += '<td title="' + (r.symptom||'') + '">' + ((r.symptom||'').substring(0,60)) + '</td>';
             html += '<td>' + ((r.diagnosis||'').substring(0,30)) + '</td>';
