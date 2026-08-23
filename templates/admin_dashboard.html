@@ -86,6 +86,13 @@
             font-size: 12px; transition: all 0.2s;
         }
         .btn-delete:hover { background: #fce8e6; }
+        .btn-view {
+            background: none; border: 1px solid #c3cbfd; color: #667eea;
+            padding: 4px 10px; border-radius: 4px; cursor: pointer;
+            font-size: 12px; text-decoration: none; transition: all 0.2s;
+            margin-right: 4px;
+        }
+        .btn-view:hover { background: #eef1fe; }
         .btn-refresh {
             padding: 6px 14px; background: #667eea; color: white;
             border: none; border-radius: 6px; cursor: pointer; font-size: 12px;
@@ -286,6 +293,7 @@
                                 <td><span class="badge {% if c.severity == 'red' %}badge-red{% elif c.severity == 'yellow' %}badge-yellow{% else %}badge-green{% endif %}">{{ c.severity }}</span></td>
                                 <td>{{ c.project_group or '-' }}</td>
                                 <td>
+                                    <a href="/case/{{ c.id }}" target="_blank" class="btn-view">📄 详情</a>
                                     <button class="btn-delete" onclick="deleteCase({{ c.id }})">🗑 删除</button>
                                 </td>
                             </tr>
