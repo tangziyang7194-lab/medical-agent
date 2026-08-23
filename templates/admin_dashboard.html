@@ -610,35 +610,49 @@
         var btn = event.target;
         btn.disabled = true;
         btn.textContent = '⏳ 同步中...';
-        document.getElementById('vectorStatus').textContent = '正在同步病例到向量库...';
+        var st = document.getElementById('vectorStatus');
+        st.innerHTML = '<span style="color:#667eea;">⏳ 正在同步病例到向量库...（约需1-2分钟，请稍候）</span>';
         fetch('/api/admin/vector/sync', {method:'POST'})
             .then(function(r){return r.json()})
             .then(function(data){
                 btn.disabled = false;
                 btn.textContent = '🔄 同步病例';
                 if (data.error) {
-                    document.getElementById('vectorStatus').innerHTML = '<span style="color:#d93025;">❌ ' + data.error + '</span>';
+                    st.innerHTML = '<span style="color:#d93025;">❌ 同步失败：' + data.error + '</span>';
+                    showToast('❌ 同步失败：' + data.error, 'error');
                 } else {
-                    document.getElementById('vectorStatus').innerHTML = '<span style="color:#1e8e3e;">✅ 同步完成：共 ' + data.total + ' 条病例，已添加 ' + data.added + ' 条向量</span>';
+                    st.innerHTML = '<span style="color:#1e8e3e;">✅ 同步完成：共 ' + data.total + ' 条病例，已添加 ' + data.added + ' 条向量</span>';
+                    showToast('✅ 同步完成：' + data.added + ' 条向量已入库', 'success');
                     loadVectorStats();
                 }
+            })
+            .catch(function(err){
+                btn.disabled = false;
+                btn.textContent = '🔄 同步病例';
+                st.innerHTML = '<span style="color:#d93025;">❌ 同步失败，请确认服务已重启</span>';
+                showToast('❌ 同步失败', 'error');
             });
     }
 
     function clearVector() {
         if (!confirm('确定清空所有向量数据？这不会影响MySQL中的病例。')) return;
+        var st = document.getElementById('vectorStatus');
+        st.innerHTML = '<span style="color:#667eea;">⏳ 正在清空向量库...</span>';
         fetch('/api/admin/vector/clear', {method:'POST'})
             .then(function(r){return r.json()})
             .then(function(data){
                 if (data.success) {
-                    document.getElementById('vectorStatus').innerHTML = '<span style="color:#d93025;">🗑 向量库已清空</span>';
+                    st.innerHTML = '<span style="color:#d93025;">🗑 向量库已清空</span>';
+                    showToast('🗑 向量库已清空', 'success');
                     loadVectorStats();
                 } else {
-                    document.getElementById('vectorStatus').innerHTML = '<span style="color:#d93025;">❌ 清空失败：' + (data.error||'未知错误') + '</span>';
+                    st.innerHTML = '<span style="color:#d93025;">❌ 清空失败：' + (data.error||'未知错误') + '</span>';
+                    showToast('❌ 清空失败', 'error');
                 }
             })
             .catch(function(err){
-                document.getElementById('vectorStatus').innerHTML = '<span style="color:#d93025;">❌ 清空失败，请确认服务已重启</span>';
+                st.innerHTML = '<span style="color:#d93025;">❌ 清空失败，请确认服务已重启</span>';
+                showToast('❌ 清空失败', 'error');
             });
     }
 
