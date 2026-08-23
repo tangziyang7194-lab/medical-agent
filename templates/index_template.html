@@ -791,11 +791,7 @@ function renderRecords() {
   const cases = allCases;
   document.getElementById('sampleCount').textContent = cases.length;
 
-  // 患者记录：数据库 consultations（同步）+ 本地 localStorage
-  let localPatients = [];
-  try {
-    localPatients = JSON.parse(localStorage.getItem('medical_patients')) || [];
-  } catch(e) {}
+  // 患者记录：与管理端咨询记录保持一致（同源 consultations 表）
   window._dbReports = {};
 
   fetch('/api/consultations')
@@ -814,10 +810,9 @@ function renderRecords() {
           report: r.report || ''
         });
       });
-      localPatients.forEach(p => items.push(p));
       renderPatientList(items);
     })
-    .catch(() => renderPatientList(localPatients));
+    .catch(() => renderPatientList([]));
 
   // 样例库
   let groups = {};

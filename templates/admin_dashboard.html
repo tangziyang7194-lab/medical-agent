@@ -468,7 +468,7 @@
                         html += '<td><span class="badge badge-green">' + (r.dept || '-') + '</span></td>';
                         html += '<td><span class="badge ' + sevClass + '">' + (r.severity || '-') + '</span></td>';
                         html += '<td>' + (r.project_group || '-') + '</td>';
-                        html += '<td><button class="btn-delete" onclick="deleteCase(' + r.id + ')">🗑 删除</button></td>';
+                        html += '<td><a href="/case/' + r.id + '" target="_blank" class="btn-view">📄 详情</a> <button class="btn-delete" onclick="deleteCase(' + r.id + ')">🗑 删除</button></td>';
                         html += '</tr>';
                     });
                     tbody.innerHTML = html;
@@ -488,7 +488,7 @@
 
     function syncSamples() {
         document.getElementById('sampleTableWrap').innerHTML = '<div class="empty">⏳ 同步中...</div>';
-        fetch('/api/admin/cases')
+        fetch('/api/admin/cases?typical=1')
             .then(function(r){return r.json()})
             .then(function(data){
                 if (data && data.length > 0) {
@@ -530,7 +530,7 @@
 
     function loadAllSamples() {
         document.getElementById('sampleTableWrap').innerHTML = '<div class="empty">⏳ 加载中...</div>';
-        fetch('/api/admin/cases')
+        fetch('/api/admin/cases?typical=1')
             .then(function(r){return r.json()})
             .then(function(data){
                 if (!data || data.length === 0) {
@@ -545,8 +545,8 @@
 
     function searchSamples() {
         var q = document.getElementById('sampleSearch2').value.trim();
-        var url = '/api/admin/cases';
-        if (q) url += '?search=' + encodeURIComponent(q);
+        var url = '/api/admin/cases?typical=1';
+        if (q) url += '&search=' + encodeURIComponent(q);
         document.getElementById('sampleTableWrap').innerHTML = '<div class="empty">⏳ 搜索中...</div>';
         fetch(url).then(function(r){return r.json()}).then(function(data){
             if (!data || data.length === 0) {
@@ -569,7 +569,7 @@
             html += '<td><span class="badge badge-green">' + (r.dept||'-') + '</span></td>';
             html += '<td><span class="badge ' + sev + '">' + (r.severity||'-') + '</span></td>';
             html += '<td>' + (r.source||'-') + '</td>';
-            html += '<td><button class="btn-delete" onclick="adminDeleteSample(' + r.id + ')">🗑 删除</button></td>';
+            html += '<td><a href="/case/' + (r.id||0) + '" target="_blank" class="btn-view">📄 详情</a> <button class="btn-delete" onclick="adminDeleteSample(' + r.id + ')">🗑 删除</button></td>';
             html += '</tr>';
         });
         html += '</tbody></table>';

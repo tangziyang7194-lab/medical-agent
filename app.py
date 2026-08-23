@@ -317,10 +317,14 @@ def admin_api_cases():
     """管理端获取病例列表API"""
     try:
         search = request.args.get("search", "").strip()
+        typical = request.args.get("typical") == "1"  # 典型筛选：关键词较多且描述充分
         import pymysql
         conn = pymysql.connect(host="localhost", port=3306, user="root",
                                password="123456", database="患者病历库", charset="utf8mb4")
         with conn.cursor(pymysql.cursors.DictCursor) as cur:
+            typical_cond = ""
+            if typical:
+                typical_cond = " AND CHAR_LENGTH(symptoms_keywords) >= 15 AND CHAR_LENGTH(case_text) >= 30"
             if search:
                 # 支持 ID 查询：输入纯数字时精确匹配 id
                 id_cond = ""
@@ -330,12 +334,13 @@ def admin_api_cases():
                     params.append(int(search))
                 cur.execute(f"""SELECT id, case_text AS symptom, diagnosis, department AS dept,
                       severity, source, source_url, project_group, symptoms_keywords AS keywords
-                FROM learned_cases WHERE case_text LIKE %s OR diagnosis LIKE %s OR department LIKE %s{id_cond}
+                FROM learned_cases WHERE (case_text LIKE %s OR diagnosis LIKE %s OR department LIKE %s{id_cond}){typical_cond}
                 ORDER BY id DESC LIMIT 2000""", tuple(params))
             else:
-                cur.execute("""SELECT id, case_text AS symptom, diagnosis, department AS dept,
-                       severity, source, source_url, project_group, symptoms_keywords AS keywords
-                FROM learned_cases ORDER BY id DESC LIMIT 2000""")
+                where = f"WHERE CHAR_LENGTH(symptoms_keywords) >= 15 AND CHAR_LENGTH(case_text) >= 30" if typical else ""
+                cur.execute(f"""SELECT id, case_text AS symptom, diagnosis, department AS dept,
+                      severity, source, source_url, project_group, symptoms_keywords AS keywords
+                FROM learned_cases {where} ORDER BY id DESC LIMIT 2000""")
             rows = cur.fetchall()
             for r in rows:
                 r["id"] = r["id"] or 0
