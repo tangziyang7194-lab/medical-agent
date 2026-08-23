@@ -872,6 +872,13 @@ def records():
 
     return render_template('records.html', patients=patients)
 
+
+@app.route('/guide')
+def guide():
+    """使用说明页（用户端 + 管理端）"""
+    return render_template('guide.html')
+
+
 @app.route('/records/<patient_id>')
 def patient_detail(patient_id):
     """患者详细问诊记录"""
