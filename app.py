@@ -841,103 +841,36 @@ def send_email():
 @app.route('/records')
 @login_required
 def records():
-    """病历中心页面（患者记录 + 样例库）"""
+    """病历中心页面（患者咨询记录）"""
     patients = []
-    project_groups = {}
-    total_cases = 0
-    try:
-        import pymysql
-        conn = pymysql.connect(host="localhost", port=3306, user="root",
-                               password="123456", database="患者病历库", charset="utf8mb4")
-
-        # 1. 获取患者咨询记录（从consultations表）
-        patients = []
-        try:
-            with conn.cursor(pymysql.cursors.DictCursor) as cur2:
-                cur2.execute("""
-                    SELECT patient_id, MAX(created_at) AS last_date, COUNT(*) AS consult_count
-                    FROM consultations GROUP BY patient_id
-                    ORDER BY last_date DESC LIMIT 100
-                """)
-                patients = cur2.fetchall()
-        except:
-            pass
-
-        # 2. 获取样例库（项目组数据）
-        with conn.cursor(pymysql.cursors.DictCursor) as cur:
-            cur.execute("""
-                SELECT project_group, year, month, department,
-                       COUNT(*) AS cnt,
-                       GROUP_CONCAT(case_text SEPARATOR '|||') AS case_texts,
-                       GROUP_CONCAT(diagnosis SEPARATOR '|||') AS diagnoses,
-                       GROUP_CONCAT(severity SEPARATOR '|||') AS severities,
-                       GROUP_CONCAT(source_url SEPARATOR '|||') AS source_urls
-                FROM learned_cases
-                GROUP BY project_group, year, month, department
-                ORDER BY project_group, year DESC, month DESC, cnt DESC
-            """)
-            rows = cur.fetchall()
-            total_cases = sum(r['cnt'] for r in rows)
-            for r in rows:
-                pg = r['project_group'] or '默认'
-                yr = r['year'] or '未知'
-                mo = r['month'] or '未知'
-                dept = r['department'] or '未知'
-                cnt = r['cnt']
-
-                # 取第一条的详情作为样例展示
-                texts = (r['case_texts'] or '').split('|||')
-                diags = (r['diagnoses'] or '').split('|||')
-                sevs = (r['severities'] or '').split('|||')
-                urls = (r['source_urls'] or '').split('|||')
-
-                if pg not in project_groups:
-                    project_groups[pg] = {}
-                if yr not in project_groups[pg]:
-                    project_groups[pg][yr] = {}
-                if mo not in project_groups[pg][yr]:
-                    project_groups[pg][yr][mo] = []
-
-                project_groups[pg][yr][mo].append({
-                    'dept': dept, 'count': cnt,
-                    'symptom': texts[0][:80] + '...' if texts and len(texts[0]) > 80 else (texts[0] if texts else ''),
-                    'diagnosis': diags[0] if diags else '',
-                    'severity': sevs[0] if sevs else 'green',
-                    'source_url': urls[0] if urls and urls[0] else '',
-                })
-
-        conn.close()
-    except Exception as e:
-        print(f"[病历] 错误: {e}")
-
-        # 获取所有原始病例数据
-    all_cases = []
-    all_depts = []
     try:
         import pymysql
         from config_loader import get_db_conn_kwargs
         conn = pymysql.connect(**get_db_conn_kwargs())
         with conn.cursor(pymysql.cursors.DictCursor) as cur:
-            cur.execute("SELECT id, case_text AS symptom, diagnosis, department AS dept, severity, source, source_url, project_group, year, month FROM learned_cases ORDER BY id DESC")
-            all_cases = cur.fetchall()
-            for r in all_cases:
-                r['id'] = r['id'] or 0
-                r['symptom'] = (r['symptom'] or '')[:200]
-                r['diagnosis'] = r['diagnosis'] or ''
-                r['dept'] = r['dept'] or '未知'
-                r['severity'] = r['severity'] or 'green'
-            cur.execute("SELECT DISTINCT department FROM learned_cases WHERE department IS NOT NULL AND department != '' ORDER BY department")
-            all_depts = [row['department'] for row in cur.fetchall()]
+            cur.execute("""
+                SELECT id, patient_id, symptom_text, department, severity,
+                       triage_level, diagnosis, created_at
+                FROM consultations
+                ORDER BY created_at DESC LIMIT 200
+            """)
+            rows = cur.fetchall()
+            # 按患者分组
+            groups = {}
+            for r in rows:
+                pid = r['patient_id'] or '未知'
+                if pid not in groups:
+                    groups[pid] = {'patient_id': pid, 'consultations': []}
+                groups[pid]['consultations'].append(r)
+            for pid, g in groups.items():
+                g['consult_count'] = len(g['consultations'])
+                g['last_date'] = str(g['consultations'][0]['created_at'] or '')
+            patients = list(groups.values())
         conn.close()
     except Exception as e:
-        print(f"[全部样例] 错误: {e}")
+        print(f"[病历] 错误: {e}")
 
-    return render_template('records.html',
-                           patients=patients,
-                           project_groups=project_groups,
-                           total_cases=total_cases,
-                           all_cases=all_cases,
-                           all_depts=all_depts)
+    return render_template('records.html', patients=patients)
 
 @app.route('/records/<patient_id>')
 def patient_detail(patient_id):

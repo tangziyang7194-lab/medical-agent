@@ -44,10 +44,6 @@
             display: inline-block; padding: 2px 8px; border-radius: 4px;
             background: #f5f3ff; color: #667eea; font-size: 12px; font-weight: 600;
         }
-        .case-source a {
-            font-size: 11px; color: #1a73e8; text-decoration: none;
-        }
-        .case-source a:hover { text-decoration: underline; }
         .case-symptoms {
             font-size: 13px; color: #555; line-height: 1.5; margin: 4px 0;
         }
@@ -60,25 +56,10 @@
         .badge-red { background: #fce8e6; color: #d93025; }
         .badge-yellow { background: #fef7e0; color: #e37400; }
         .badge-green { background: #e6f4ea; color: #1e8e3e; }
-        .tab-bar {
-            display: flex; gap: 0; margin-bottom: 14px;
-            background: white; border-radius: 10px; overflow: hidden;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-        }
-        .tab-btn {
-            flex: 1; padding: 10px; text-align: center; cursor: pointer;
-            font-size: 13px; font-weight: 500; border: none; background: white;
-            transition: all 0.2s; color: #999;
-        }
-        .tab-btn.active { background: #667eea; color: white; }
-        .tab-btn:hover:not(.active) { background: #f5f3ff; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
         .empty {
             text-align: center; padding: 30px; color: #ccc; font-size: 13px;
         }
         .footer { text-align: center; padding: 20px; color: #aaa; font-size: 12px; }
-        .source-icon { font-size: 11px; }
         @media (max-width: 480px) {
             .container { padding: 12px; }
             .case-header { flex-wrap: wrap; gap: 4px; }
@@ -89,7 +70,7 @@
 <div class="container">
     <div class="header">
         <h2>📋 病历中心</h2>
-        <div class="sub">患者咨询记录 · AI样例库 · 12点自动学习</div>
+        <div class="sub">患者咨询记录</div>
     </div>
     <div class="back">
         <a href="/">🏠 返回首页</a>
@@ -97,34 +78,29 @@
         <a href="/learning">🧠 学习中心</a>
     </div>
 
-    <div class="tab-bar">
-        <button class="tab-btn active" onclick="switchTab('patients')">👤 患者记录</button>
-        <button class="tab-btn" onclick="switchTab('samples')">📂 样例库 ({{ total_cases }}例)</button>
-    </div>
-
-    <!-- Tab 1: 患者记录 -->
-    <div id="tab-patients" class="tab-content active">
+    <!-- 患者咨询记录 -->
+    <div id="tab-patients">
         {% if not patients %}
         <div class="card empty">暂无患者问诊记录</div>
         {% else %}
             {% for p in patients %}
             <div class="card">
                 <div class="card-title">
-                    👤 {{ p.surname }}（{{ p.gender }}）编号：{{ p.patient_id }}
-                    <span class="title-count">{{ p.age }}岁 · {{ p.location[:15] if p.location else '' }}</span>
+                    👤 患者编号：{{ p.patient_id }}
+                    <span class="title-count">{{ p.consult_count }} 次咨询 · {{ p.last_date[:16] if p.last_date else '' }}</span>
                 </div>
-                {% for c in p.get('consultations', []) %}
+                {% for c in p.consultations %}
                 <div class="case-item">
                     <div class="case-header">
                         <div>
-                            <span class="case-dept">{{ c.department }}</span>
-                            <span class="badge {% if c.severity == 'red' %}badge-red{% elif c.severity == 'yellow' %}badge-yellow{% else %}badge-green{% endif %}">{{ c.severity }}</span>
+                            <span class="case-dept">{{ c.department or '未知科室' }}</span>
+                            <span class="badge {% if c.severity == 'red' %}badge-red{% elif c.severity == 'yellow' %}badge-yellow{% else %}badge-green{% endif %}">{{ c.severity or 'green' }}</span>
                         </div>
-                        <div class="case-meta">{{ c.created_at[:16] }}</div>
+                        <div class="case-meta">{{ (c.created_at|string)[:16] }}</div>
                     </div>
                     <div class="case-symptoms">{{ c.symptom_text[:100] if c.symptom_text else '无' }}</div>
                     <div class="case-meta">
-                        <span>🏥 {{ c.triage_level }}</span>
+                        <span>🏥 {{ c.triage_level or '-' }}</span>
                         <span>📝 {{ c.diagnosis[:30] if c.diagnosis else '无' }}</span>
                     </div>
                 </div>
@@ -134,100 +110,8 @@
         {% endif %}
     </div>
 
-    <!-- Tab 2: 样例库 -->
-    <div id="tab-samples" class="tab-content">
-        {% if not all_cases %}
-        <div class="card empty">暂无样例数据</div>
-        {% else %}
-        <div style="margin-bottom:10px;">
-            <input type="text" id="recordSearch" placeholder="🔍 搜索症状、诊断、科室..." style="padding:8px;border:1px solid #ccc;border-radius:6px;font-size:13px;width:250px;" onkeyup="filterRecordSamples()">
-            <span id="recordPageInfo" style="font-size:12px;color:#888;margin-left:10px;"></span>
-        </div>
-        <div id="recordSampleList"></div>
-        <div id="recordPagination" style="margin-top:8px;font-size:12px;"></div>
-        <script>
-        var recordAllCases = {{ all_cases|tojson|safe }};
-        var recordPage = 1;
-        var recordPerPage = 20;
-
-        function renderRecordPage() {
-            var total = recordAllCases.length;
-            var pages = Math.ceil(total / recordPerPage);
-            var start = (recordPage - 1) * recordPerPage;
-            var end = start + recordPerPage;
-            var pageData = recordAllCases.slice(start, end);
-
-            var html = "";
-            pageData.forEach(function(r){
-                var sev = r.severity || "green";
-                var url = r.source_url || "";
-                html += "<div style='background:white;border-radius:8px;padding:12px;margin-bottom:8px;box-shadow:0 1px 4px rgba(0,0,0,0.05);border-left:4px solid " + (sev==="red"?"#ef4444":sev==="yellow"?"#f59e0b":"#22c55e") + ";'>";
-                html += "<div style='font-size:13px;font-weight:600;margin-bottom:4px;'>🏥 " + (r.dept||"未知") + " <span style='font-size:11px;color:#888;'>(" + (r.project_group||"-") + ")</span></div>";
-                html += "<div style='font-size:13px;color:#333;margin-bottom:4px;'>" + (r.symptom||"") + "</div>";
-                html += "<div style='font-size:12px;'>🩺 <strong>" + (r.diagnosis||"") + "</strong></div>";
-                if (url) html += '<div style="margin-top:4px;"><a href="' + url + '" target="_blank" style="font-size:11px;color:#1a73e8;">📰 查看来源</a></div>';
-                html += "</div>";
-            });
-
-            document.getElementById("recordSampleList").innerHTML = html || '<div style="text-align:center;padding:20px;color:#999;">无匹配数据</div>';
-            document.getElementById("recordPageInfo").textContent = "共" + total + "条 第" + recordPage + "/" + pages + "页";
-            document.getElementById("recordPagination").innerHTML =
-                '<button onclick="recordPage=1;renderRecordPage()" style="padding:4px 10px;font-size:11px;margin:2px;">首页</button> ' +
-                '<button onclick="if(recordPage>1){recordPage--;renderRecordPage()}" style="padding:4px 10px;font-size:11px;margin:2px;">上一页</button> ' +
-                '<button onclick="if(recordPage<pages){recordPage++;renderRecordPage()}" style="padding:4px 10px;font-size:11px;margin:2px;">下一页</button> ' +
-                '<button onclick="recordPage=pages;renderRecordPage()" style="padding:4px 10px;font-size:11px;margin:2px;">末页</button>';
-        }
-
-        function filterRecordSamples() {
-            var kw = document.getElementById("recordSearch").value.trim().toLowerCase();
-            if (!kw) { recordAllCases = {{ all_cases|tojson|safe }}; recordPage = 1; renderRecordPage(); return; }
-            recordAllCases = {{ all_cases|tojson|safe }}.filter(function(r){
-                return (r.symptom||"").toLowerCase().indexOf(kw)>=0 ||
-                       (r.diagnosis||"").toLowerCase().indexOf(kw)>=0 ||
-                       (r.dept||"").toLowerCase().indexOf(kw)>=0;
-            });
-            recordPage = 1;
-            renderRecordPage();
-        }
-
-        renderRecordPage();
-        </script>
-        {% endif %}
- 
-
     <div class="footer">AI 导诊系统 · DeepSeek V4 驱动</div>
 </div>
-
-<script>
-function switchTab(name) {
-    document.querySelectorAll('.tab-content').forEach(function(el){el.classList.remove('active');});
-    document.querySelectorAll('.tab-btn').forEach(function(el){el.classList.remove('active');});
-    document.getElementById('tab-' + name).classList.add('active');
-    document.querySelector('.tab-btn[onclick*="' + name + '"]').classList.add('active');
-}
-
-function filterSamples() {
-    var q = document.getElementById('sampleSearch').value.trim().toLowerCase();
-    var dept = document.getElementById('deptFilter').value;
-    var items = document.querySelectorAll('.sample-item');
-    items.forEach(function(item){
-        var show = true;
-        if (dept && item.dataset.dept !== dept) show = false;
-        if (q) {
-            var symp = (item.dataset.symptom || '').toLowerCase();
-            var diag = (item.dataset.diagnosis || '').toLowerCase();
-            if (symp.indexOf(q) === -1 && diag.indexOf(q) === -1) show = false;
-        }
-        item.style.display = show ? '' : 'none';
-    });
-}
-
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-    document.getElementById('tab-' + name).classList.add('active');
-    document.querySelector('.tab-btn[onclick*="' + name + '"]').classList.add('active');
-}
-
 
 </body>
 </html>
