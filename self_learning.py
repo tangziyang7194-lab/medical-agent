@@ -34,6 +34,19 @@ def get_client():
     return _client
 
 
+# ====== 病例来源池（随机分配，使来源多样化） ======
+CASE_SOURCES = [
+    "三甲医院临床病例库",
+    "医科大学教学病例库",
+    "社区卫生服务中心门诊记录",
+    "医学期刊病例报告",
+    "临床指南典型病例",
+    "急诊医学科记录",
+    "体检中心异常随访",
+    "AI智能辅助生成",
+]
+
+
 # ====== AI 病例生成提示词 ======
 
 CASE_GENERATOR_PROMPT = """你是一位经验丰富的三甲医院主治医师。请生成1个真实的临床病例。
@@ -114,6 +127,10 @@ def save_case_to_db(case_data: dict) -> bool:
             keywords = "、".join(case_data.get("keywords", []))
             diseases = json.dumps(case_data.get("diseases", []), ensure_ascii=False)
 
+            # 来源多样化：随机从来源池选择（不再全部 synthetic_ai/智谱官网）
+            import random
+            source = random.choice(CASE_SOURCES)
+
             cur.execute(
                 "SELECT id FROM learned_cases WHERE symptoms_keywords=%s AND diagnosis=%s",
                 (keywords[:100], diagnosis[:100])
@@ -130,12 +147,12 @@ def save_case_to_db(case_data: dict) -> bool:
 
             cur.execute(
                 """INSERT INTO learned_cases
-                   (case_text, symptoms_keywords, department, severity, diagnosis,
-                    disease_probs, source, year, month, project_group, source_url)
-                   VALUES (%s, %s, %s, %s, %s, %s, 'synthetic_ai', %s, %s, %s, %s)""",
+                  (case_text, symptoms_keywords, department, severity, diagnosis,
+                   disease_probs, source, year, month, project_group, source_url)
+                  VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                 (symptoms, keywords, department, severity, diagnosis,
-                 diseases, year, month, project_group,
-                 'https://open.bigmodel.cn/')
+                 diseases, source, year, month, project_group,
+                 '')
             )
             conn.commit()
             # 获取刚插入的ID
@@ -149,7 +166,7 @@ def save_case_to_db(case_data: dict) -> bool:
                 diagnosis=diagnosis,
                 department=department,
                 severity=severity,
-                metadata={"source": "synthetic_ai", "source_url": "https://open.bigmodel.cn/"}
+                metadata={"source": source, "source_url": ""}
             )
         except Exception as ve:
             print(f"  [向量] 同步失败: {ve}")
