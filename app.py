@@ -1146,6 +1146,42 @@ def case_detail(case_id):
     return render_template("case_detail.html", case=case, error=error)
 
 
+@app.route('/api/export/word', methods=['POST'])
+@login_required
+def export_word():
+    """AI 诊断报告导出为 Word (.docx)"""
+    try:
+        from docx import Document
+        from docx.shared import Pt
+        from datetime import datetime
+        data = request.get_json() or {}
+        text = (data.get("report") or "").strip()
+        if not text:
+            return jsonify({"error": "无报告内容"}), 400
+
+        doc = Document()
+        style = doc.styles["Normal"]
+        style.font.name = "微软雅黑"
+        style.font.size = Pt(11)
+        for line in text.splitlines():
+            if line.strip().startswith("=") or line.strip().startswith("-"):
+                continue  # 跳过装饰线
+            p = doc.add_paragraph(line)
+            if line.strip().startswith("AI") and "诊断报告" in line:
+                for run in p.runs:
+                    run.font.size = Pt(16)
+                    run.bold = True
+        import io
+        buf = io.BytesIO()
+        doc.save(buf)
+        buf.seek(0)
+        fname = f"AI诊断报告_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx"
+        return send_file(buf, as_attachment=True, download_name=fname,
+                         mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/settings', methods=['GET', 'POST'])
 def settings():
     """SMTP 邮箱配置页"""

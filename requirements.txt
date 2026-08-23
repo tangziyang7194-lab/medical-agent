@@ -25,3 +25,6 @@ requests>=2.31.0
 # 生产环境
 APScheduler>=3.10.0
 openai>=1.30.0
+
+# Word 导出
+python-docx>=1.1.0

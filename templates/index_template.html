@@ -563,7 +563,7 @@ function generateReport(symptomText, diagnosis) {
   let now = new Date();
   let dateStr = now.toLocaleString('zh-CN');
   return `============================================================
-  AI 医疗诊断报告
+  AI 医疗诊断报告（DeepSeek V4）
 ============================================================
   就诊日期: ${dateStr}
   患者: 在线咨询
@@ -575,7 +575,7 @@ function generateReport(symptomText, diagnosis) {
   诊断结论: ${diagnosis||'建议进一步检查'}
 ------------------------------------------------------------
   处理建议: 建议前往${dept}就诊，完善相关检查。
-  本报告由AI导诊系统自动生成，仅供参考。`;
+  本报告由 DeepSeek V4 智能体自动生成，仅供参考。`;
 }
 
 function getData() {
@@ -587,6 +587,31 @@ function getData() {
 
 function saveData(data) {
   try { localStorage.setItem('medical_patients', JSON.stringify(data.patients || [])); } catch(e) {}
+}
+
+function exportWord(id) {
+  // 导出诊断报告为 Word (.docx)，走后端 /api/export/word
+  let arr = [];
+  try { arr = JSON.parse(localStorage.getItem('medical_patients')) || []; } catch(e) {}
+  let rec = arr.find(x => x.id === id);
+  if (!rec || !rec.report) { alert('未找到报告内容'); return; }
+  fetch('/api/export/word', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({report: rec.report})
+  }).then(r => {
+    if (!r.ok) return r.json().then(d => { throw new Error(d.error || '导出失败'); });
+    return r.blob();
+  }).then(blob => {
+    let url = URL.createObjectURL(blob);
+    let a = document.createElement('a');
+    a.href = url;
+    a.download = 'AI诊断报告_' + id + '.docx';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }).catch(err => alert('导出失败：' + err.message));
 }
 
 function saveRecord(report) {
@@ -631,6 +656,9 @@ function renderRecords() {
       </div>
       <div style="font-size:13px;color:#555;margin:4px 0;">🏥 ${p.dept||'未知科室'}</div>
       <div style="font-size:12px;color:#666;white-space:pre-wrap;max-height:100px;overflow-y:auto;">${p.report?.substring(0,200)||'无'}</div>
+      <div style="margin-top:8px;">
+        <button onclick="exportWord(${p.id})" style="padding:5px 12px;background:#667eea;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;">📄 导出 Word</button>
+      </div>
     </div>`;
   });
   document.getElementById('tab-patients').innerHTML = pHtml;
