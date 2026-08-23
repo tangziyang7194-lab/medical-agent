@@ -136,6 +136,7 @@
             <a href="/records">📋 病历</a>
             <a href="/admin/register" style="color:#4ade80;">📝 添加管理员</a>
             <a href="/admin/health">🩺 健康</a>
+            <a href="javascript:void(0)" onclick="document.getElementById('adminGuideOverlay').style.display='flex';" style="color:#a5b4fc;border:1px solid rgba(165,180,252,0.4);">📖 使用说明</a>
             <a href="/api/admin/export/cases" style="color:#fbbf24;">📥 导出病例</a>
             <a href="/admin/logout" class="logout">🚪 退出</a>
         </div>
@@ -607,11 +608,15 @@
             headers:{'Content-Type':'application/json'},
             body: JSON.stringify({query: q})
         }).then(function(r){return r.json()}).then(function(data){
+            if (data.error) {
+                resultsDiv.innerHTML = '<div style="padding:10px;color:#d93025;">❌ ' + data.error + '</div>';
+                return;
+            }
             if (!data.success || !data.results || data.results.length === 0) {
                 resultsDiv.innerHTML = '<div style="padding:10px;color:#999;">未找到相似病例</div>';
                 return;
             }
-            var html = '<table><thead><tr><th>相似度</th><th>科室</th><th>症状</th><th>诊断</th><th>严重度</th></tr></thead><tbody>';
+            var html = '<table><thead><tr><th>相似度</th><th>科室</th><th>症状</th><th>诊断</th><th>严重度</th><th>操作</th></tr></thead><tbody>';
             data.results.forEach(function(r){
                 var sev = r.severity === 'red' ? 'badge-red' : r.severity === 'yellow' ? 'badge-yellow' : 'badge-green';
                 var sim = (r.similarity * 100).toFixed(0) + '%';
@@ -619,16 +624,54 @@
                 html += '<td><span class="badge badge-green">' + (r.department||'-') + '</span></td>';
                 html += '<td>' + (r.symptoms||'').substring(0,60) + '</td>';
                 html += '<td>' + (r.diagnosis||'').substring(0,30) + '</td>';
-                html += '<td><span class="badge ' + sev + '">' + (r.severity||'-') + '</span></td></tr>';
+                html += '<td><span class="badge ' + sev + '">' + (r.severity||'-') + '</span></td>';
+                html += '<td><a href="/case/' + (r.id||0) + '" target="_blank" style="color:#667eea;text-decoration:none;font-weight:600;white-space:nowrap;">📄 详情</a></td></tr>';
             });
             html += '</tbody></table>';
             resultsDiv.innerHTML = html;
             document.getElementById('vectorStatus').textContent = '找到 ' + data.results.length + ' 条相似病例';
+        }).catch(function(err){
+            resultsDiv.innerHTML = '<div style="padding:10px;color:#d93025;">❌ 搜索失败，请确认服务已重启</div>';
         });
     }
 
     // 页面加载时加载向量统计
     loadVectorStats();
+</script>
+
+<!-- ====== 使用说明弹窗（README风格） ====== -->
+<style>
+.admin-guide-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;}
+.admin-guide-modal{background:#fff;border-radius:16px;max-width:560px;width:100%;max-height:80vh;overflow-y:auto;padding:24px;color:#333;box-shadow:0 20px 60px rgba(0,0,0,0.3);}
+.admin-guide-modal h2{margin-bottom:14px;font-size:18px;color:#667eea;}
+.admin-guide-item{display:flex;gap:10px;margin-bottom:10px;font-size:13px;line-height:1.7;}
+.admin-guide-item b{color:#667eea;flex-shrink:0;width:110px;}
+.admin-guide-warn{background:#fff3cd;border:1px solid #ffe08a;color:#8a6d1a;border-radius:8px;padding:8px 12px;font-size:12px;margin-top:12px;}
+.admin-guide-btn{display:block;width:100%;margin-top:16px;padding:10px;border:none;border-radius:8px;background:linear-gradient(90deg,#667eea,#764ba2);color:#fff;font-size:14px;font-weight:600;cursor:pointer;}
+.admin-guide-btn:hover{opacity:0.9;}
+</style>
+<div class="admin-guide-overlay" id="adminGuideOverlay">
+    <div class="admin-guide-modal">
+        <h2>📖 管理端使用说明</h2>
+        <div class="admin-guide-item"><b>📊 仪表盘</b><span>系统数据总览：病例 / 咨询 / 患者统计</span></div>
+        <div class="admin-guide-item"><b>🩺 健康管理</b><span>健康建议采集与展示、柳叶刀医学文献管理（可手动触发采集）</span></div>
+        <div class="admin-guide-item"><b>🧠 病例管理</b><span>病例的增删改查，支持导出</span></div>
+        <div class="admin-guide-item"><b>🔍 向量库</b><span>语义搜索（点「📄 详情」查看完整病例）、🔄 同步 MySQL 病例、🗑 清空（不影响 MySQL 数据）</span></div>
+        <div class="admin-guide-item"><b>⏰ 定时任务</b><span>12:00 自动学习病例｜18:00 健康建议采集｜18:10 柳叶刀文献</span></div>
+        <div class="admin-guide-item"><b>📥 导出</b><span>一键导出病例数据（CSV）</span></div>
+        <div class="admin-guide-warn">☁️ PythonAnywhere 云端版说明：云端免费版<b>不涉及任何数据库/向量库操作</b>（病例管理、健康采集、向量搜索等数据功能仅本地版可用）。</div>
+        <div class="admin-guide-warn">💡 修改配置（.env）或代码后，需重启服务才生效；管理端和用户端共用同一数据库。</div>
+        <button class="admin-guide-btn" onclick="document.getElementById('adminGuideOverlay').style.display='none';">开始使用 →</button>
+    </div>
+</div>
+<script>
+(function(){
+    if (sessionStorage.getItem('adminGuideShown')) {
+        document.getElementById('adminGuideOverlay').style.display = 'none';
+    } else {
+        sessionStorage.setItem('adminGuideShown', '1');
+    }
+})();
 </script>
 </body>
 </html>

@@ -124,7 +124,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue"
 <div class="toast" id="toast"></div>
 
 <script>
-const API_KEY = "520d6eb5cc16464a8f0f23a428597a3c.NjwCBlDNNYFnMgGe";
+// AI 对话走后端代理 /api/chat（DeepSeek），key 保存在服务器 .env，不暴露在浏览器
 let allCases = [], chatMsgs = [], allRecords = [];
 
 function loadData() {
@@ -207,13 +207,13 @@ function sendChat(){
   addMsg(t,'user'); chatMsgs.push({role:'user',content:t});
   let turns=chatMsgs.filter(m=>m.role==='user').length;
   showTyping();
-  fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions',{
+  fetch('/api/chat',{
     method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+API_KEY},
-    body:JSON.stringify({model:'glm-4-plus',messages:[{role:'system',content:'你是一位资深主治医师，每次不超过150字，只问1-2个问题。至少3轮后给出诊断建议，末尾加【READY】。'},...chatMsgs],temperature:0.7,max_tokens:1024})
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({messages:chatMsgs})
   }).then(r=>r.json()).then(data=>{
     hideTyping();
-    let reply=data.choices?.[0]?.message?.content||'抱歉。'; let ready=reply.includes('【READY】')&&turns>=3; let clean=reply.replace('【READY】','').trim();
+    let reply=data.reply||'抱歉。'; let ready=data.ready&&turns>=3; let clean=reply.replace('【READY】','').trim();
     addMsg(clean,'bot'); chatMsgs.push({role:'assistant',content:clean});
     if(ready){
       let symptom=chatMsgs.filter(m=>m.role==='user').map(m=>m.content).join(', ');

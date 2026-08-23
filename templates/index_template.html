@@ -711,20 +711,8 @@ function showCaseDetail(idx) {
   var results = window._vsearchResults;
   if (!results || !results[idx]) return;
   var r = results[idx];
-  var sevDot = r.severity === 'red' ? '🔴' : r.severity === 'yellow' ? '🟡' : '🟢';
-  var html = '<div style="background:linear-gradient(135deg,#0f0c29,#1a1a3e);border-radius:12px;padding:16px;color:#e0e0ff;">';
-  html += '<div style="display:flex;justify-content:space-between;margin-bottom:8px;">';
-  html += '<span style="font-weight:600;">' + sevDot + ' ' + (r.diagnosis||'') + '</span>';
-  html += '<span style="font-size:11px;background:rgba(102,126,234,0.3);padding:1px 8px;border-radius:4px;">' + (r.department||'') + '</span></div>';
-  html += '<div style="font-size:12px;line-height:1.5;color:rgba(255,255,255,0.7);">' + (r.symptoms||'') + '</div>';
-  html += '<div style="margin-top:8px;font-size:10px;color:rgba(255,255,255,0.3);">相似度: ' + Math.round(r.similarity*100) + '% | 来源: ' + (r.source||'AI生成') + '</div>';
-  html += '</div>';
-  document.getElementById('vsearchResults').innerHTML = html;
-  document.getElementById('vsearchStatus').textContent = '点击空白处关闭详情';
-  // Auto close after 3 seconds
-  setTimeout(function(){
-    vectorSearch();
-  }, 5000);
+  // 跳转病例详情页（完整展示）
+  window.location.href = '/case/' + (r.id || 0);
 }
 
 // Show vector search panel on page load
@@ -734,6 +722,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 <div id="userBar" style="position:fixed;bottom:16px;right:16px;z-index:999;display:none;">
     <span style="color:#818cf8;font-size:12px;margin-right:8px;" id="userName"></span>
+    <a href="javascript:void(0)" onclick="document.getElementById('guideOverlay').style.display='flex';" style="padding:6px 14px;background:rgba(99,102,241,0.2);color:#a5b4fc;border-radius:8px;font-size:12px;text-decoration:none;margin-right:8px;">📖 使用说明</a>
     <a href="/user/logout" style="padding:6px 14px;background:rgba(239,68,68,0.2);color:#fca5a5;border-radius:8px;font-size:12px;text-decoration:none;">🚪 退出登录</a>
 </div>
 <script>
@@ -743,6 +732,40 @@ fetch("/api/user/status").then(function(r){return r.json()}).then(function(d){
         document.getElementById("userName").textContent=d.username;
     }
 });
+</script>
+
+<!-- ====== 使用说明弹窗（README风格） ====== -->
+<style>
+.guide-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(10,10,25,0.85);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;}
+.guide-modal{background:linear-gradient(160deg,#1e1b4b,#0f0c29);border:1px solid rgba(99,102,241,0.4);border-radius:16px;max-width:520px;width:100%;max-height:80vh;overflow-y:auto;padding:24px;color:#e2e8f0;box-shadow:0 20px 60px rgba(0,0,0,0.5);}
+.guide-modal h2{margin-bottom:14px;font-size:18px;color:#a5b4fc;}
+.guide-item{display:flex;gap:10px;margin-bottom:10px;font-size:13px;line-height:1.7;}
+.guide-item b{color:#4ade80;flex-shrink:0;width:72px;}
+.guide-warn{background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.35);color:#fca5a5;border-radius:8px;padding:8px 12px;font-size:12px;margin-top:12px;}
+.guide-btn{display:block;width:100%;margin-top:16px;padding:10px;border:none;border-radius:8px;background:linear-gradient(90deg,#6366f1,#8b5cf6);color:#fff;font-size:14px;font-weight:600;cursor:pointer;}
+.guide-btn:hover{opacity:0.9;}
+</style>
+<div class="guide-overlay" id="guideOverlay">
+    <div class="guide-modal">
+        <h2>📖 使用说明</h2>
+        <div class="guide-item"><b>💬 对话问诊</b><span>输入症状即可开始，AI医生会像真人一样追问细节，收集足够信息后自动生成诊断报告</span></div>
+        <div class="guide-item"><b>⚡ 快捷问诊</b><span>点击聊天框上方的快捷按钮，一键体验常见症状问诊</span></div>
+        <div class="guide-item"><b>🔍 语义搜索</b><span>输入关键词搜索相似病例，点击结果可查看完整病例详情</span></div>
+        <div class="guide-item"><b>📋 咨询记录</b><span>查看历史问诊记录与诊断报告，可下载PDF</span></div>
+        <div class="guide-item"><b>🌿 健康建议</b><span>每日更新的健康养生知识与医学前沿文献</span></div>
+        <div class="guide-warn">☁️ PythonAnywhere 云端版说明：云端免费版<b>不涉及任何数据库/向量库操作</b>（病例、咨询记录、健康建议、语义搜索等数据功能仅本地版可用）。</div>
+        <div class="guide-warn">⚠️ 紧急情况（胸痛、呼吸困难、大出血、意识障碍等）请立即拨打120或前往急诊！</div>
+        <button class="guide-btn" onclick="document.getElementById('guideOverlay').style.display='none';">开始使用 →</button>
+    </div>
+</div>
+<script>
+(function(){
+    if (sessionStorage.getItem('guideShown')) {
+        document.getElementById('guideOverlay').style.display = 'none';
+    } else {
+        sessionStorage.setItem('guideShown', '1');
+    }
+})();
 </script>
 
 </body>

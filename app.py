@@ -1086,6 +1086,22 @@ def admin_vector_stats():
     from vector_store import count_cases
     return jsonify({"count": count_cases()})
 
+
+@app.route('/api/admin/vector/search', methods=['POST'])
+@admin_required_api
+def admin_vector_search():
+    """管理端向量语义搜索"""
+    try:
+        data = request.get_json()
+        query = (data or {}).get("query", "").strip()
+        if not query:
+            return jsonify({"success": False, "error": "请输入查询"})
+        from vector_store import search_similar
+        results = search_similar(query, limit=5)
+        return jsonify({"success": True, "results": results})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
 @app.route('/api/vector/search', methods=['POST'])
 def public_vector_search():
     """向量语义搜索测试"""
@@ -1099,6 +1115,35 @@ def public_vector_search():
         return jsonify({"success": True, "results": results})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
+
+
+@app.route('/case/<int:case_id>')
+@login_required
+def case_detail(case_id):
+    """向量搜索结果 → 病例详情页（用户端/管理端共用）"""
+    case = None
+    error = None
+    try:
+        import json
+        from config_loader import get_db_conn_kwargs
+        import pymysql
+        conn = pymysql.connect(**get_db_conn_kwargs())
+        with conn.cursor(pymysql.cursors.DictCursor) as cur:
+            cur.execute("SELECT * FROM learned_cases WHERE id=%s", (case_id,))
+            case = cur.fetchone()
+        conn.close()
+        if not case:
+            error = "未找到该病例（可能已被删除）"
+        else:
+            # 预解析 JSON 字段（模板无需自定义过滤器）
+            if case.get("disease_probs"):
+                try:
+                    case["disease_probs"] = json.loads(case["disease_probs"])
+                except Exception:
+                    case["disease_probs"] = None
+    except Exception as e:
+        error = f"查询失败：{str(e)[:80]}"
+    return render_template("case_detail.html", case=case, error=error)
 
 
 @app.route('/settings', methods=['GET', 'POST'])

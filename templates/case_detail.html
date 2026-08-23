@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>病例详情 - AI导诊系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #1a1a3e, #24243e);
+            min-height: 100vh; color: #e2e8f0; padding: 24px 16px;
+        }
+        .wrap { max-width: 860px; margin: 0 auto; }
+        .topbar {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px;
+        }
+        .topbar a {
+            color: #a5b4fc; text-decoration: none; font-size: 14px;
+            padding: 8px 16px; border: 1px solid rgba(99,102,241,0.4); border-radius: 8px;
+            transition: all 0.2s; background: rgba(99,102,241,0.08);
+        }
+        .topbar a:hover { background: rgba(99,102,241,0.25); color: #fff; }
+        .card {
+            background: rgba(30,27,75,0.7); backdrop-filter: blur(10px);
+            border: 1px solid rgba(99,102,241,0.25); border-radius: 16px;
+            padding: 24px; margin-bottom: 16px;
+        }
+        .title-row {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            gap: 12px; margin-bottom: 16px; flex-wrap: wrap;
+        }
+        .diagnosis {
+            font-size: 22px; font-weight: 700; color: #fff;
+            line-height: 1.4;
+        }
+        .badge {
+            display: inline-block; padding: 3px 12px; border-radius: 20px;
+            font-size: 12px; font-weight: 600; white-space: nowrap;
+        }
+        .badge-red { background: rgba(239,68,68,0.2); color: #f87171; border: 1px solid rgba(239,68,68,0.5); }
+        .badge-yellow { background: rgba(245,158,11,0.2); color: #fbbf24; border: 1px solid rgba(245,158,11,0.5); }
+        .badge-green { background: rgba(34,197,94,0.2); color: #4ade80; border: 1px solid rgba(34,197,94,0.5); }
+        .badge-dept { background: rgba(129,140,248,0.15); color: #a5b4fc; border: 1px solid rgba(129,140,248,0.4); }
+        .meta {
+            display: flex; gap: 16px; flex-wrap: wrap;
+            font-size: 12px; color: #94a3b8; margin-bottom: 16px;
+            padding-bottom: 16px; border-bottom: 1px solid rgba(99,102,241,0.15);
+        }
+        .section { margin-bottom: 20px; }
+        .section-title {
+            font-size: 13px; font-weight: 600; color: #818cf8;
+            margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+        }
+        .section-body {
+            font-size: 14px; line-height: 1.8; color: #cbd5e1;
+            background: rgba(15,23,42,0.5); border-radius: 10px;
+            padding: 14px 16px; white-space: pre-wrap; word-break: break-word;
+        }
+        .prob-item {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+            font-size: 13px;
+        }
+        .prob-name { width: 130px; color: #e2e8f0; flex-shrink: 0; }
+        .prob-bar-wrap { flex: 1; background: rgba(99,102,241,0.15); border-radius: 6px; height: 10px; overflow: hidden; }
+        .prob-bar { height: 100%; border-radius: 6px; background: linear-gradient(90deg, #818cf8, #6366f1); }
+        .prob-val { width: 48px; text-align: right; color: #a5b4fc; font-weight: 600; }
+        .src-link a {
+            color: #4ade80; text-decoration: none; word-break: break-all;
+        }
+        .src-link a:hover { text-decoration: underline; }
+        .error-box {
+            background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.4);
+            color: #fca5a5; border-radius: 12px; padding: 20px; text-align: center;
+        }
+        .footer { text-align: center; font-size: 11px; color: #64748b; margin-top: 24px; }
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <div class="topbar">
+        <span style="font-size:15px;color:#a5b4fc;">🩺 病例详情</span>
+        <a href="javascript:history.back()">← 返回</a>
+    </div>
+
+    {% if error %}
+        <div class="error-box">⚠️ {{ error }}</div>
+    {% elif case %}
+        <div class="card">
+            <div class="title-row">
+                <div class="diagnosis">
+                    {% if case.severity == 'red' %}🔴{% elif case.severity == 'yellow' %}🟡{% else %}🟢{% endif %}
+                    {{ case.diagnosis or '待诊断' }}
+                </div>
+                <div>
+                    {% if case.severity == 'red' %}<span class="badge badge-red">严重</span>
+                    {% elif case.severity == 'yellow' %}<span class="badge badge-yellow">中等</span>
+                    {% else %}<span class="badge badge-green">轻微</span>{% endif %}
+                    <span class="badge badge-dept">🏥 {{ case.department or '内科' }}</span>
+                </div>
+            </div>
+            <div class="meta">
+                <span>📦 病例 #{{ case.id }}</span>
+                <span>🗂 {{ case.project_group or '-' }}</span>
+                <span>📅 {{ case.created_at.strftime('%Y-%m-%d %H:%M') if case.created_at else '-' }}</span>
+                <span>🔖 来源：{{ case.source or 'AI生成' }}</span>
+                <span>👁 使用 {{ case.used_count or 0 }} 次</span>
+            </div>
+
+            <div class="section">
+                <div class="section-title">📝 症状描述</div>
+                <div class="section-body">{{ case.case_text or '无描述' }}</div>
+            </div>
+
+            {% if case.symptoms_keywords %}
+            <div class="section">
+                <div class="section-title">🔑 症状关键词</div>
+                <div class="section-body">{{ case.symptoms_keywords }}</div>
+            </div>
+            {% endif %}
+
+            {% set probs = case.disease_probs %}
+            {% if probs %}
+            <div class="section">
+                <div class="section-title">📊 疾病可能性评估</div>
+                <div class="section-body">
+                    {% for p in probs %}
+                    <div class="prob-item">
+                        <span class="prob-name">{{ p.get('name','未知') }}</span>
+                        <div class="prob-bar-wrap"><div class="prob-bar" style="width:{{ p.get('probability',0)|int }}%"></div></div>
+                        <span class="prob-val">{{ p.get('probability',0)|int }}%</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if case.source_url %}
+            <div class="section">
+                <div class="section-title">🔗 来源链接</div>
+                <div class="section-body src-link"><a href="{{ case.source_url }}" target="_blank" rel="noopener">{{ case.source_url }}</a></div>
+            </div>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <div class="footer">本页面由 AI 导诊系统生成 · 病例仅供学习参考，不构成医疗建议</div>
+</div>
+</body>
+</html>
