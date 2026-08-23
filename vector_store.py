@@ -1,9 +1,10 @@
-"""
+﻿"""
 向量数据库模块 - 基于ChromaDB的语义检索
 用于存储和学习病例的向量表示，实现RAG增强检索
 """
 import os
 import json
+import threading
 import chromadb
 from chromadb.config import Settings
 from zhipuai import ZhipuAI
@@ -25,13 +26,14 @@ def get_zhipu_client():
             load_env()
         except ImportError:
             pass
+        # embedding 使用智谱专用 key（DeepSeek 无 embedding API，勿用 DEEPSEEK key）
         embed_key = os.environ.get("ZHIPUAI_API_KEY", "")
         embed_base = os.environ.get("ZHIPUAI_API_BASE", "https://open.bigmodel.cn/api/paas/v4")
         _zhipu_client = ZhipuAI(api_key=embed_key, base_url=embed_base)
     return _zhipu_client
 
 def _local_embedding(texts):
-    """本地回退嵌入：jieba 分词 + 哈希词频向量（无智谱Key时自动使用）"""
+    """本地回退嵌入：jieba 分词 + 哈希词频向量（无智谱Key或调用失败时自动使用）"""
     import jieba
     import hashlib
     DIM = 1024
@@ -86,6 +88,7 @@ class ChromaDBEmbeddingFunction(EmbeddingFunction):
 
 _client = None
 _collection = None
+_collection_lock = threading.Lock()
 
 def get_client():
     global _client
@@ -100,18 +103,21 @@ def get_client():
 def get_collection():
     global _collection
     if _collection is None:
-        emb_fn = ChromaDBEmbeddingFunction()
-        client = get_client()
-        try:
-            _collection = client.get_collection(
-                name=COLLECTION_NAME,
-                embedding_function=emb_fn
-            )
-        except Exception:
-            _collection = client.create_collection(
-                name=COLLECTION_NAME,
-                embedding_function=emb_fn
-            )
+        # 线程锁防止并发首次初始化竞态（self_learning 4线程并发 add_case 会触发）
+        with _collection_lock:
+            if _collection is None:
+                emb_fn = ChromaDBEmbeddingFunction()
+                client = get_client()
+                try:
+                    _collection = client.get_collection(
+                        name=COLLECTION_NAME,
+                        embedding_function=emb_fn
+                    )
+                except Exception:
+                    _collection = client.create_collection(
+                        name=COLLECTION_NAME,
+                        embedding_function=emb_fn
+                    )
     return _collection
 
 # ========== 核心操作 ==========
