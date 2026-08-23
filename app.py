@@ -18,6 +18,38 @@ from regions import get_provinces, get_cities, get_districts, format_location
 from email_pdf import validate_email, get_email_provider_name, generate_pdf, send_report_email
 
 app = Flask(__name__)
+
+# ========== 防 DoS 限流：1 秒最多 10 次请求/IP ==========
+from collections import defaultdict, deque
+
+RATE_LIMIT_PER_SEC = 10
+_rate_buckets = defaultdict(deque)
+_rate_last_cleanup = time.time()
+
+
+@app.before_request
+def rate_limit_requests():
+    """全局限流：静态资源不限，其余请求 1 秒最多 10 次/IP，超限返回 429"""
+    global _rate_last_cleanup
+    if request.path.startswith("/static/"):
+        return None
+    now = time.time()
+    # 每 5 分钟清理无活跃窗口的 IP，防止内存膨胀
+    if now - _rate_last_cleanup > 300:
+        for ip in [k for k, q in _rate_buckets.items() if not q or q[-1] < now - 5]:
+            _rate_buckets.pop(ip, None)
+        _rate_last_cleanup = now
+    ip = request.remote_addr or "unknown"
+    q = _rate_buckets[ip]
+    while q and q[0] < now - 1.0:
+        q.popleft()
+    if len(q) >= RATE_LIMIT_PER_SEC:
+        if request.path.startswith("/api/"):
+            return jsonify({"success": False, "error": "请求过于频繁，请 1 秒后再试"}), 429
+        return ("<!doctype html><html><meta charset='utf-8'><body style='font-family:sans-serif;text-align:center;margin-top:80px;color:#555;'><h2>⏳ 请求过于频繁</h2><p>请 1 秒后再试（429 Too Many Requests）</p></body></html>", 429)
+    q.append(now)
+    return None
+
 app.secret_key = os.urandom(24)
 
 # ========== 管理员认证（基于admin_auth模块）==========
