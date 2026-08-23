@@ -578,6 +578,17 @@ function generateReport(symptomText, diagnosis) {
   本报告由AI导诊系统自动生成，仅供参考。`;
 }
 
+function getData() {
+  // 从 localStorage 读取患者记录（与 renderRecords 共用 key）
+  let arr = [];
+  try { arr = JSON.parse(localStorage.getItem('medical_patients')) || []; } catch(e) {}
+  return { patients: arr };
+}
+
+function saveData(data) {
+  try { localStorage.setItem('medical_patients', JSON.stringify(data.patients || [])); } catch(e) {}
+}
+
 function saveRecord(report) {
   let data = getData();
   if (!data.patients) data.patients = [];
