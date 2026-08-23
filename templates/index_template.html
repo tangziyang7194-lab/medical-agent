@@ -594,6 +594,9 @@ function exportWord(id) {
   let arr = [];
   try { arr = JSON.parse(localStorage.getItem('medical_patients')) || []; } catch(e) {}
   let rec = arr.find(x => x.id === id);
+  if (!rec && window._dbReports && window._dbReports[id]) {
+    rec = { report: window._dbReports[id] };
+  }
   if (!rec || !rec.report) { alert('未找到报告内容'); return; }
   fetch('/api/export/word', {
     method: 'POST',
@@ -615,6 +618,19 @@ function exportWord(id) {
 }
 
 function saveRecord(report) {
+  // 同步保存到数据库 consultations（管理端/用户端数据一致）
+  fetch('/api/consultations', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      surname: '在线',
+      symptom: (report.match(/主诉: (.+)/) || [])[1] || '',
+      diagnosis: (report.match(/诊断结论: (.+)/) || [])[1] || '',
+      dept: (report.match(/建议科室: (.+)/) || [])[1] || '',
+      report: report
+    })
+  }).catch(() => {});
+  // 本地保存（供导出与兼容）
   let data = getData();
   if (!data.patients) data.patients = [];
   data.patients.push({
@@ -638,30 +654,36 @@ function switchRecTab(name) {
 }
 
 function renderRecords() {
-  let patients = []; // 从localStorage读取患者记录（如有）
-  try {
-    let stored = JSON.parse(localStorage.getItem('medical_patients')) || [];
-    patients = stored;
-  } catch(e) {}
   const cases = allCases;
   document.getElementById('sampleCount').textContent = cases.length;
 
-  // 患者记录
-  let pHtml = patients.length === 0 ? '<div class="empty">暂无问诊记录</div>' : '';
-  patients.forEach(p => {
-    pHtml += `<div class="pg-card" style="padding:14px;">
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-        <strong>👤 ${p.surname}（${p.gender}）</strong>
-        <span style="font-size:11px;color:#999;">${p.time}</span>
-      </div>
-      <div style="font-size:13px;color:#555;margin:4px 0;">🏥 ${p.dept||'未知科室'}</div>
-      <div style="font-size:12px;color:#666;white-space:pre-wrap;max-height:100px;overflow-y:auto;">${p.report?.substring(0,200)||'无'}</div>
-      <div style="margin-top:8px;">
-        <button onclick="exportWord(${p.id})" style="padding:5px 12px;background:#667eea;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;">📄 导出 Word</button>
-      </div>
-    </div>`;
-  });
-  document.getElementById('tab-patients').innerHTML = pHtml;
+  // 患者记录：数据库 consultations（同步）+ 本地 localStorage
+  let localPatients = [];
+  try {
+    localPatients = JSON.parse(localStorage.getItem('medical_patients')) || [];
+  } catch(e) {}
+  window._dbReports = {};
+
+  fetch('/api/consultations')
+    .then(r => r.json())
+    .then(records => {
+      let items = [];
+      (records || []).forEach(r => {
+        let rid = 'db_' + r.id;
+        window._dbReports[rid] = r.report || '';
+        items.push({
+          id: rid,
+          surname: r.patient_id || '在线',
+          gender: '咨询',
+          time: (r.created_at || '').replace('T', ' ').substring(0, 19),
+          dept: r.department || '未知科室',
+          report: r.report || ''
+        });
+      });
+      localPatients.forEach(p => items.push(p));
+      renderPatientList(items);
+    })
+    .catch(() => renderPatientList(localPatients));
 
   // 样例库
   let groups = {};
@@ -691,6 +713,24 @@ function renderRecords() {
   });
   if (!sHtml) sHtml = '<div class="empty">暂无样例数据</div>';
   document.getElementById('tab-samples').innerHTML = sHtml;
+}
+
+function renderPatientList(patients) {
+  let pHtml = patients.length === 0 ? '<div class="empty">暂无问诊记录</div>' : '';
+  patients.forEach(p => {
+    pHtml += `<div class="pg-card" style="padding:14px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+        <strong>👤 ${p.surname}（${p.gender||'咨询'}）</strong>
+        <span style="font-size:11px;color:#999;">${p.time}</span>
+      </div>
+      <div style="font-size:13px;color:#555;margin:4px 0;">🏥 ${p.dept||'未知科室'}</div>
+      <div style="font-size:12px;color:#666;white-space:pre-wrap;max-height:100px;overflow-y:auto;">${p.report?.substring(0,200)||'无'}</div>
+      <div style="margin-top:8px;">
+        <button onclick="exportWord(${p.id})" style="padding:5px 12px;background:#667eea;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;">📄 导出 Word</button>
+      </div>
+    </div>`;
+  });
+  document.getElementById('tab-patients').innerHTML = pHtml;
 }
 
 // ====== 切页 ======

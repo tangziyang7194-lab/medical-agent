@@ -9,15 +9,18 @@ DB_CFG = {"host":"localhost","port":3306,"user":"root","password":"123456",
 
 
 def save_consultation(surname, gender, symptom, diagnosis, dept, report):
-    """保存咨询记录到MySQL patients表"""
+    """保存咨询记录到MySQL consultations表"""
     try:
+        import time as _time
         conn = pymysql.connect(**DB_CFG)
         with conn.cursor() as cur:
+            # patient_id 列宽 varchar(10)：W + 9位时间戳
+            pid = f"W{int(_time.time()) % 1000000000}"
             cur.execute(
                 """INSERT INTO consultations
-                   (patient_id, symptom_text, keywords, department, severity, triage_level, diagnosis, report)
-                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""",
-                (f"W{datetime.now().strftime('%Y%m%d%H%M%S')}", symptom, "",
+                  (patient_id, symptom_text, keywords, department, severity, triage_level, diagnosis, report)
+                  VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""",
+                (pid, symptom, "",
                  dept, "green", "二级医院", diagnosis, report)
             )
             conn.commit()
@@ -43,7 +46,7 @@ def get_consultations(limit=50):
                 r['symptom_text'] = (r['symptom_text'] or '')[:100]
                 r['diagnosis'] = r['diagnosis'] or ''
                 r['department'] = r['department'] or ''
-                r['report'] = (r['report'] or '')[:200]
+                r['report'] = r['report'] or ''  # 完整报告（供导出Word）
         conn.close()
         return rows
     except Exception as e:
