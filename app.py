@@ -903,7 +903,7 @@ def records():
                     'symptom': texts[0][:80] + '...' if texts and len(texts[0]) > 80 else (texts[0] if texts else ''),
                     'diagnosis': diags[0] if diags else '',
                     'severity': sevs[0] if sevs else 'green',
-                    'source_url': urls[0] if urls else 'https://open.bigmodel.cn/',
+                    'source_url': urls[0] if urls and urls[0] else '',
                 })
 
         conn.close()
@@ -918,7 +918,7 @@ def records():
         from config_loader import get_db_conn_kwargs
         conn = pymysql.connect(**get_db_conn_kwargs())
         with conn.cursor(pymysql.cursors.DictCursor) as cur:
-            cur.execute("SELECT id, case_text AS symptom, diagnosis, department AS dept, severity, source, source_url, project_group, year, month FROM learned_cases ORDER BY id DESC LIMIT 500")
+            cur.execute("SELECT id, case_text AS symptom, diagnosis, department AS dept, severity, source, source_url, project_group, year, month FROM learned_cases ORDER BY id DESC")
             all_cases = cur.fetchall()
             for r in all_cases:
                 r['id'] = r['id'] or 0
