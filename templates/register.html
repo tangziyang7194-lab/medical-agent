@@ -70,11 +70,7 @@
     <form id="formAdmin" method="POST" action="/admin/register" style="display:none;">
         <div class="form-group"><label>用户名</label><input type="text" name="username" placeholder="2-16个字符" required></div>
         <div class="form-group"><label>密码</label><input type="password" name="password" placeholder="至少6个字符" required></div>
-        <div class="form-group"><label>手机号</label><input type="text" name="phone" placeholder="用于短信验证" required></div>
-        <div class="form-group sms-row">
-            <input type="text" name="sms_code" placeholder="短信验证码" required>
-            <button type="button" class="sms-btn" id="smsBtn" onclick="sendSMS()">📱 获取验证码</button>
-        </div>
+        <div class="form-group"><label>确认密码</label><input type="password" name="password2" placeholder="再次输入密码" required></div>
         <button type="submit" class="btn btn-admin">🔐 注册管理员</button>
     </form>
     
@@ -98,23 +94,6 @@ function switchRole(role) {
     }
 }
 
-var smsCountdown = 0;
-function sendSMS() {
-    if (smsCountdown > 0) return;
-    var phone = document.querySelector('#formAdmin input[name="phone"]').value.trim();
-    if (!/^1\d{10}$/.test(phone)) { alert('请输入有效的手机号'); return; }
-    smsCountdown = 60;
-    var btn = document.getElementById('smsBtn');
-    btn.disabled = true;
-    var timer = setInterval(function(){
-        smsCountdown--;
-        if (smsCountdown <= 0) { clearInterval(timer); btn.disabled = false; btn.textContent = '📱 获取验证码'; }
-        else { btn.textContent = smsCountdown + 's后重发'; }
-    }, 1000);
-    fetch('/api/admin/send_sms', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'phone='+phone})
-        .then(function(r){return r.json()})
-        .then(function(d){ if(d.success) alert('验证码: '+d.code); else alert('发送失败'); });
-}
 </script>
 </body>
 </html>
