@@ -412,7 +412,7 @@
             }).catch(function() {
                 showToast('❌ 网络错误', 'error');
                 if (btn) { btn.disabled = false; btn.textContent = '🗑 删除'; }
-            });
+            }).catch(function(){ showToast('❌ 删除失败', 'error'); });
         }
 
         function deleteConsultation(id) {
@@ -440,7 +440,7 @@
             }).catch(function() {
                 showToast('❌ 网络错误', 'error');
                 if (btn) { btn.disabled = false; btn.textContent = '🗑 删除'; }
-            });
+            }).catch(function(){ showToast('❌ 删除失败', 'error'); });
         }
 
         function searchCases(e) {
@@ -472,7 +472,7 @@
                         html += '</tr>';
                     });
                     tbody.innerHTML = html;
-                });
+                }).catch(function(){ showToast('❌ 搜索失败', 'error'); });
         }
 
     // ====== 样例库操作 ======
@@ -496,7 +496,7 @@
                     samplePage = 1;
                     renderSamplePage();
                 }
-            });
+            }).catch(function(){ document.getElementById('sampleTableWrap').innerHTML = '<div class="empty">❌ 加载失败</div>'; });
     }
 
     function renderSamplePage() {
@@ -540,7 +540,7 @@
                 sampleAllData = data;
                 samplePage = 1;
                 renderSamplePage();
-            });
+            }).catch(function(){ document.getElementById('sampleTableWrap').innerHTML = '<div class="empty">❌ 加载失败</div>'; });
     }
 
     function searchSamples() {
@@ -594,7 +594,7 @@
                 showToast('❌ 删除失败', 'error');
                 if (btn) { btn.disabled = false; btn.textContent = '🗑 删除'; }
             }
-        });
+        }).catch(function(){ showToast('❌ 删除失败', 'error'); });
     }
 
     // ====== 向量数据库操作 ======
@@ -603,7 +603,7 @@
             .then(function(r){return r.json()})
             .then(function(data){
                 document.getElementById('vectorCount').textContent = '📊 ' + data.count + ' 条向量';
-            });
+            }).catch(function(){ showToast('❌ 向量统计加载失败', 'error'); });
     }
 
     function syncVector() {
@@ -690,7 +690,7 @@
             document.getElementById('vectorStatus').textContent = '找到 ' + data.results.length + ' 条相似病例';
         }).catch(function(err){
             resultsDiv.innerHTML = '<div style="padding:10px;color:#d93025;">❌ 搜索失败，请确认服务已重启</div>';
-        });
+        }).catch(function(){ showToast('❌ 搜索失败', 'error'); });
     }
 
     // 页面加载时加载向量统计

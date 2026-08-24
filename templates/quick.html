@@ -181,7 +181,7 @@ function loadCities() {
             citySel.innerHTML = '<option value="">请选择城市</option>' +
                 cities.map(c => '<option value="' + c + '">' + c + '</option>').join('');
             citySel.disabled = false;
-        });
+        }).catch(function(){ citySel.innerHTML = '<option value="">加载失败，请重试</option>'; citySel.disabled = false; });
 }
 function loadDistricts() {
     const city = document.getElementById('city').value;
@@ -203,7 +203,7 @@ function loadDistricts() {
             distSel.innerHTML = '<option value="">请选择区/县</option>' +
                 districts.map(d => '<option value="' + d + '">' + d + '</option>').join('');
             distSel.disabled = false;
-        });
+        }).catch(function(){ distSel.innerHTML = '<option value="">加载失败，请重试</option>'; distSel.disabled = false; });
 }
 document.getElementById('province').addEventListener('change', loadCities);
 document.getElementById('city').addEventListener('change', loadDistricts);

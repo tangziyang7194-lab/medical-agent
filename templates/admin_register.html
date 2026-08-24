@@ -138,7 +138,7 @@
                     tip.textContent = '❌ 用户名已被注册';
                     tip.style.color = '#d93025';
                 }
-            });
+            }).catch(function(){ /* 用户名检查失败不阻塞注册 */ });
         }
     </script>
 </body>

@@ -157,7 +157,7 @@ function loadTipsPage(page) {
                 html = '<div style="text-align:center;padding:20px;color:#999;">暂无数据</div>';
             }
             document.getElementById("tipsList").innerHTML = html;
-        });
+        }).catch(function(){ var pi=document.getElementById('tipsPageInfo'); if(pi) pi.textContent='加载失败'; });
 }
 
 function dedupTips() {
@@ -173,7 +173,7 @@ function dedupTips() {
                 document.getElementById('tipsResult').innerHTML = '<span style="color:#22c55e;">✅ 扫描' + r.total + '条，删除' + r.deleted + '条重复</span>';
                 loadTipsPage(1);
             }
-        });
+        }).catch(function(){ var b=document.getElementById('btnDedup'); if(b){ b.disabled=false; b.textContent='🔄 实时去重'; } var r=document.getElementById('tipsResult'); if(r) r.innerHTML='<span style="color:#d93025;">❌ 去重失败</span>'; });
 }
 
 function summarizeTips() {

@@ -941,7 +941,7 @@ fetch("/api/user/status").then(function(r){return r.json()}).then(function(d){
         document.getElementById("userBar").style.display="";
         document.getElementById("userName").textContent=d.username;
     }
-});
+}).catch(function(){ /* 状态加载失败静默 */ });
 </script>
 
 </body>

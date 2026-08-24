@@ -499,6 +499,10 @@ def get_agent() -> MedicalConsultationAgent:
         session['session_id'] = sid
     if sid not in _agents:
         _agents[sid] = MedicalConsultationAgent()
+        # 内存保护：会话数超过100时清理最老的agent，防止内存无限增长
+        if len(_agents) > 100:
+            for _k in list(_agents)[:-100]:
+                del _agents[_k]
     return _agents[sid]
 
 
