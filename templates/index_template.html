@@ -565,15 +565,20 @@ function sendMsg() {
       reportBtn.textContent = '📋 查看诊断报告 →';
       reportBtn.onclick = function(e) {
         e.preventDefault();
-        let symptomText = chatMessages.filter(m=>m.role==='user').map(m=>m.content).join(', ');
-        let report = generateReport(symptomText, chatMessages.slice(-1)[0]?.content||'');
-        saveRecord(report);
-        if (window.__IS_CLOUD__) {
-          // 云端精简版：直接弹窗展示报告并支持导出
-          downloadReport(report);
-        } else {
-          showRecords();
-          showSimilarCases(symptomText);
+        try {
+          let symptomText = chatMessages.filter(m=>m.role==='user').map(m=>m.content).join(', ');
+          let report = generateReport(symptomText, chatMessages.slice(-1)[0]?.content||'');
+          // 先保存到数据库，保存完成后再切换页面（避免查不到刚保存的记录）
+          Promise.resolve(saveRecord(report)).then(function() {
+            if (window.__IS_CLOUD__) {
+              downloadReport(report);
+            } else {
+              showRecords();
+              showSimilarCases(symptomText);
+            }
+          });
+        } catch(err) {
+          alert('报告生成失败：' + (err && err.message ? err.message : err));
         }
       };
       document.getElementById('chatBox').appendChild(reportBtn);
@@ -752,8 +757,8 @@ function startVoice() {
 }
 
 function saveRecord(report) {
-  // 同步保存到数据库 consultations（管理端/用户端数据一致）
-  fetch('/api/consultations', {
+  // 同步保存到数据库 consultations（管理端/用户端数据一致）；返回 Promise 供调用方等待
+  let p = fetch('/api/consultations', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({
@@ -777,6 +782,7 @@ function saveRecord(report) {
     dept: report.match(/建议科室: (.+)/)?.[1] || ''
   });
   saveData(data);
+  return p;
 }
 
 // ====== 病历页 ======
