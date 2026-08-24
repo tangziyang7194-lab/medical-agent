@@ -45,6 +45,7 @@
         {% if status.overall == 'ok' %}✅ 系统运行正常{% elif status.overall == 'warning' %}⚠️ 系统有警告{% else %}❌ 系统存在异常{% endif %}
     </div>
 
+    {% if not is_cloud %}
     <div class="card">
         <div class="card-title">📊 数据概览</div>
         <div class="stat-grid">
@@ -56,10 +57,12 @@
             <div class="stat-item"><div class="stat-number">{{ chroma.get('vectors', '-') }}</div><div class="stat-label">🧠 向量</div></div>
         </div>
     </div>
+    {% endif %}
 
     <div class="card">
         <div class="card-title">🔌 服务状态</div>
         {% for name, svc in status.services.items() %}
+        {% if not is_cloud or name in ('zhipuai', 'admin') %}
         <div style="padding:10px 0;border-bottom:1px solid #f0f0f0;">
             <div style="display:flex;align-items:center;gap:8px;">
                 <span class="status-dot dot-{{ svc.status }}"></span>
@@ -69,6 +72,7 @@
             {% if svc.message %}<div class="msg">⚠️ {{ svc.message }}</div>{% endif %}
             {% if svc.model %}<div class="msg">模型: {{ svc.model }}</div>{% endif %}
         </div>
+        {% endif %}
         {% endfor %}
     </div>
 
@@ -81,6 +85,7 @@
         </table>
     </div>
 
+    {% if not is_cloud %}
     <div class="card">
         <div class="card-title">🌿 健康养生建议 <span style="font-size:12px;color:#888;font-weight:normal;">每天18:00自动</span></div>
         <div class="stat-grid" id="tipsStats">
@@ -105,6 +110,7 @@
         <div id="tipsResult" style="font-size:13px;margin:6px 0;"></div>
         <div id="tipsList"></div>
     </div>
+    {% endif %}
 </div>
 
 <script>

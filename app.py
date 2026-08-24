@@ -1373,31 +1373,33 @@ def admin_health():
     """系统健康检查页面"""
     status = {"services": {}, "overall": "ok"}
 
-    # MySQL检查
-    try:
-        import pymysql
-        from config_loader import get_db_conn_kwargs
-        conn = pymysql.connect(**get_db_conn_kwargs())
-        with conn.cursor() as cur:
-            cur.execute("SELECT COUNT(*) FROM learned_cases")
-            case_count = cur.fetchone()[0]
-            cur.execute("SELECT COUNT(*) FROM consultations")
-            consult_count = cur.fetchone()[0]
-            cur.execute("SELECT COUNT(*) FROM patients")
-            patient_count = cur.fetchone()[0]
-        conn.close()
-        status["services"]["mysql"] = {"status": "ok", "cases": case_count, "consultations": consult_count, "patients": patient_count}
-    except Exception as e:
-        status["services"]["mysql"] = {"status": "error", "message": str(e)[:100]}
-        status["overall"] = "error"
+    # MySQL检查（云端精简模式无数据库，跳过）
+    if not CLOUD_MODE:
+        try:
+            import pymysql
+            from config_loader import get_db_conn_kwargs
+            conn = pymysql.connect(**get_db_conn_kwargs())
+            with conn.cursor() as cur:
+                cur.execute("SELECT COUNT(*) FROM learned_cases")
+                case_count = cur.fetchone()[0]
+                cur.execute("SELECT COUNT(*) FROM consultations")
+                consult_count = cur.fetchone()[0]
+                cur.execute("SELECT COUNT(*) FROM patients")
+                patient_count = cur.fetchone()[0]
+            conn.close()
+            status["services"]["mysql"] = {"status": "ok", "cases": case_count, "consultations": consult_count, "patients": patient_count}
+        except Exception as e:
+            status["services"]["mysql"] = {"status": "error", "message": str(e)[:100]}
+            status["overall"] = "error"
 
-    # ChromaDB检查
-    try:
-        from vector_store import count_cases
-        vcount = count_cases()
-        status["services"]["chromadb"] = {"status": "ok", "vectors": vcount}
-    except Exception as e:
-        status["services"]["chromadb"] = {"status": "error", "message": str(e)[:100]}
+    # ChromaDB检查（云端精简模式无向量库，跳过）
+    if not CLOUD_MODE:
+        try:
+            from vector_store import count_cases
+            vcount = count_cases()
+            status["services"]["chromadb"] = {"status": "ok", "vectors": vcount}
+        except Exception as e:
+            status["services"]["chromadb"] = {"status": "error", "message": str(e)[:100]}
 
     # LLM API检查（DeepSeek）
     try:
