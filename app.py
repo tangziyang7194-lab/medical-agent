@@ -6,7 +6,7 @@ import os
 import sys
 import uuid
 from flask import Flask, render_template, request, session, redirect, url_for, jsonify, send_file, Response
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 from functools import wraps
 
@@ -58,7 +58,9 @@ def rate_limit_requests():
     q.append(now)
     return None
 
-app.secret_key = os.urandom(24)
+# 固定密钥：服务重启后会话不失效（随机密钥会导致每次重启用户全部掉线）
+app.secret_key = os.environ.get("SECRET_KEY") or "medical-agent-fixed-secret-key-2026"
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=7)  # 会话7天有效（浏览器关闭不丢）
 
 # ========== 管理员认证（基于admin_auth模块）==========
 from admin_auth import (
@@ -152,6 +154,7 @@ def user_login():
 
         if verify_user(username, password):
             session["user"] = username
+            session.permanent = True
             return redirect("/home")
         return render_template("user_login.html", error="用户名或密码错误")
     return render_template("user_login.html")
@@ -220,6 +223,7 @@ def admin_login():
         
         if result["success"]:
             session["admin_logged_in"] = True
+            session.permanent = True
             session["admin_user"] = result["user"]
             return redirect(url_for("admin_dashboard"))
         else:
@@ -1675,4 +1679,4 @@ if __name__ == '__main__':
         init_case_learning_scheduler()
     except Exception:
         pass
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, use_reloader=False, threaded=True, host='0.0.0.0', port=5000)  # 稳定模式
