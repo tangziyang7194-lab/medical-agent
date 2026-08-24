@@ -1607,17 +1607,23 @@ def admin_dedup_tips():
 @app.route("/api/admin/health_tips/summarize", methods=["POST"])
 @admin_required_api
 def admin_summarize_tips():
-    from summary_ai import summarize_all
-    result = summarize_all()
-    return jsonify({"success": True, "results": result})
+    try:
+        from summary_ai import summarize_all
+        result = summarize_all()
+        return jsonify({"success": True, "results": result})
+    except Exception as e:
+        return jsonify({"success": False, "error": f"AI总结失败: {str(e)[:120]}"})
 
 @app.route("/api/admin/health_tips/run", methods=["POST"])
 @admin_required_api
 def admin_run_health_tips():
     """手动触发一次健康建议生成"""
-    from health_tips import run_daily_task
-    result = run_daily_task()
-    return jsonify(result)
+    try:
+        from health_tips import run_daily_task
+        result = run_daily_task()
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"success": False, "saved": 0, "error": f"采集失败: {str(e)[:150]}"})
 
 @app.route("/api/admin/health_tips/stats")
 @admin_required_api

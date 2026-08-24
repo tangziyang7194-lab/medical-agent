@@ -183,6 +183,10 @@ function summarizeTips() {
             } else {
                 document.getElementById('tipsResult').innerHTML = '<span style="color:#d93025;">❌ ' + (data.error||'失败') + '</span>';
             }
+        })
+        .catch(function(err){
+            btn.disabled = false; btn.textContent = '🤖 AI总结全部';
+            document.getElementById('tipsResult').innerHTML = '<span style="color:#d93025;">❌ 请求失败：请重启服务（旧API Key会报401）</span>';
         });
 }
 
@@ -198,8 +202,12 @@ function runHealthTips(btn) {
                 document.getElementById("tipsResult").innerHTML = '<span style="color:#22c55e;">✅ 成功生成 ' + data.saved + ' 条</span>';
                 loadTipsPage(1);
             } else {
-                document.getElementById("tipsResult").innerHTML = '<span style="color:#d93025;">❌ 生成失败</span>';
+                document.getElementById("tipsResult").innerHTML = '<span style="color:#d93025;">❌ 生成失败：' + (data.error || '未知错误') + '</span>';
             }
+        })
+        .catch(function(err){
+            btn.disabled = false; btn.textContent = "🚀 立即生成30条";
+            document.getElementById("tipsResult").innerHTML = '<span style="color:#d93025;">❌ 请求失败：请重启服务（旧API Key会报401）</span>';
         });
 }
 
