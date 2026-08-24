@@ -156,6 +156,27 @@ def user_login():
         return render_template("user_login.html", error="用户名或密码错误")
     return render_template("user_login.html")
 
+
+@app.route("/user/forgot", methods=["GET", "POST"])
+def user_forgot():
+    """用户端忘记密码（仅需用户名+新密码，无需认证）"""
+    error = ""
+    success = ""
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "").strip()
+        password2 = request.form.get("password2", "").strip()
+        if password != password2:
+            error = "两次密码不一致"
+        else:
+            from user_auth import reset_user_password
+            result = reset_user_password(username, password)
+            if result["success"]:
+                success = result["message"]
+            else:
+                error = result["error"]
+    return render_template("user_forgot.html", error=error, success=success)
+
 @app.route("/user/register", methods=["GET", "POST"])
 def user_register():
     if request.method == "POST":
@@ -234,6 +255,27 @@ def admin_register():
 
     return render_template("admin_register.html", error=error, success=success,
                            has_users=has_admin_users())
+
+
+@app.route("/admin/forgot", methods=["GET", "POST"])
+def admin_forgot():
+    """管理端忘记密码（仅需用户名+新密码，无需认证）"""
+    error = ""
+    success = ""
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "").strip()
+        password2 = request.form.get("password2", "").strip()
+        if password != password2:
+            error = "两次密码不一致"
+        else:
+            from admin_auth import reset_admin_password
+            result = reset_admin_password(username, password)
+            if result["success"]:
+                success = result["message"]
+            else:
+                error = result["error"]
+    return render_template("admin_forgot.html", error=error, success=success)
 
 @app.route("/api/admin/send_sms", methods=["POST"])
 def admin_send_sms():

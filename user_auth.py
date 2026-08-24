@@ -44,7 +44,6 @@ def register_user(username, password):
 def verify_user(username, password):
     """验证用户登录"""
     username = username.strip().lower()
-
     # 检查是否与管理员用户名冲突
     from admin_auth import _load_users as _load_admin_users
     admins = _load_admin_users()
@@ -57,3 +56,20 @@ def verify_user(username, password):
         return False
     pw_hash, _ = hash_password(password, user["salt"])
     return pw_hash == user["password"]
+
+
+def reset_user_password(username, new_password):
+    """重置用户密码（忘记密码找回，无需认证）"""
+    username = username.strip().lower()
+    if not username:
+        return {"success": False, "error": "请输入用户名"}
+    if len(new_password) < 4:
+        return {"success": False, "error": "密码至少4个字符"}
+    users = _load_users()
+    if username not in users:
+        return {"success": False, "error": "用户不存在，请检查用户名"}
+    pw_hash, salt = hash_password(new_password)
+    users[username]["password"] = pw_hash
+    users[username]["salt"] = salt
+    _save_users(users)
+    return {"success": True, "message": "密码已重置，请用新密码登录"}

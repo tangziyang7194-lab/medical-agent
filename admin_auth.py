@@ -155,6 +155,22 @@ def register_admin(username: str, password: str, phone: str = "") -> dict:
     
     return {"success": True, "message": "注册成功"}
 
+
+def reset_admin_password(username, new_password):
+    """重置管理员密码（忘记密码找回，无需认证）"""
+    username = username.strip()
+    if not username:
+        return {"success": False, "error": "请输入用户名"}
+    if len(new_password) < 6:
+        return {"success": False, "error": "密码至少6个字符"}
+    users = _load_users()
+    for u in users:
+        if u.get("username") == username:
+            u["password_hash"] = hash_password(new_password)
+            _save_users(users)
+            return {"success": True, "message": "密码已重置，请用新密码登录"}
+    return {"success": False, "error": "管理员账号不存在，请检查用户名"}
+
 def login_admin(username_or_phone: str, password: str = None, sms_code: str = None) -> dict:
     """管理员登录（支持密码登录或短信验证码登录）"""
     users = _load_users()

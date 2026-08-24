@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>找回密码 - AI导诊系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Microsoft YaHei', -apple-system, sans-serif; }
+        body {
+            min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            background-size: 300% 300%; animation: bgShift 12s ease infinite;
+        }
+        @keyframes bgShift { 0% {background-position: 0% 50%;} 50% {background-position: 100% 50%;} 100% {background-position: 0% 50%;} }
+        .box {
+            width: 380px; max-width: 92vw; background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.12); border-radius: 18px;
+            padding: 34px 32px; backdrop-filter: blur(14px); box-shadow: 0 18px 50px rgba(0,0,0,0.5);
+        }
+        h2 { color: #fff; font-size: 22px; text-align: center; margin-bottom: 4px; }
+        .sub { color: #a5b4fc; font-size: 12px; text-align: center; margin-bottom: 22px; }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; color: #c7d2fe; font-size: 12px; margin-bottom: 6px; }
+        .form-group input {
+            width: 100%; padding: 11px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.08); color: #fff; font-size: 14px; outline: none;
+            transition: all 0.2s;
+        }
+        .form-group input:focus { border-color: #818cf8; background: rgba(255,255,255,0.12); }
+        .form-group input::placeholder { color: rgba(255,255,255,0.35); }
+        .btn {
+            width: 100%; padding: 12px; border: none; border-radius: 10px; font-size: 15px;
+            cursor: pointer; color: #fff; font-weight: 600; margin-top: 6px;
+            background: linear-gradient(135deg, #667eea, #764ba2); transition: all 0.25s;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(102,126,234,0.4); }
+        .error { background: rgba(217,48,37,0.15); color: #ff8a80; padding: 10px 14px; border-radius: 10px; font-size: 12px; margin-bottom: 14px; border: 1px solid rgba(217,48,37,0.3); }
+        .msg { background: rgba(30,142,62,0.15); color: #81c995; padding: 10px 14px; border-radius: 10px; font-size: 12px; margin-bottom: 14px; border: 1px solid rgba(30,142,62,0.3); }
+        .links { text-align: center; margin-top: 18px; font-size: 12px; }
+        .links a { color: #a5b4fc; text-decoration: none; margin: 0 8px; }
+        .links a:hover { color: #fff; text-decoration: underline; }
+        .tip { color: rgba(255,255,255,0.4); font-size: 11px; text-align: center; margin-top: 12px; }
+    </style>
+</head>
+<body>
+<div class="box">
+    <h2>🔑 找回密码</h2>
+    <div class="sub">AI导诊系统 · 用户端</div>
+
+    {% if error %}<div class="error">❌ {{ error }}</div>{% endif %}
+    {% if success %}<div class="msg">✅ {{ success }}</div>{% endif %}
+
+    <form method="POST" action="/user/forgot">
+        <div class="form-group">
+            <label>用户名</label>
+            <input type="text" name="username" placeholder="请输入注册时的用户名" required autofocus>
+        </div>
+        <div class="form-group">
+            <label>新密码</label>
+            <input type="password" name="password" placeholder="至少4个字符" required>
+        </div>
+        <div class="form-group">
+            <label>确认新密码</label>
+            <input type="password" name="password2" placeholder="再次输入新密码" required>
+        </div>
+        <button type="submit" class="btn">重置密码</button>
+    </form>
+
+    <div class="tip">直接输入用户名和新密码即可重置，无需其他认证</div>
+
+    <div class="links">
+        <a href="/user/login">← 返回登录</a>
+        <a href="/">🏠 返回首页</a>
+    </div>
+</div>
+</body>
+</html>
