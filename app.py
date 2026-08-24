@@ -1028,9 +1028,12 @@ def learning_history():
 
 @app.route('/api/consultations', methods=['GET', 'POST'])
 def api_consultations():
-    """咨询记录API：GET查询 / POST保存"""
+    """咨询记录API：GET查询 / POST保存（云端无数据库时用 JSON 文件存储）"""
     if request.method == 'GET':
-        from mysql_store import get_consultations
+        if CLOUD_MODE:
+            from cloud_store import get_consultations
+        else:
+            from mysql_store import get_consultations
         records = get_consultations(50)
         return jsonify(records)
 
@@ -1040,9 +1043,20 @@ def api_consultations():
     diagnosis = data.get('diagnosis', '')
     dept = data.get('dept', '')
     report = data.get('report', '')
-    from mysql_store import save_consultation
+    if CLOUD_MODE:
+        from cloud_store import save_consultation
+    else:
+        from mysql_store import save_consultation
     cid = save_consultation(surname, '咨询', symptom, diagnosis, dept, report)
     return jsonify({'success': cid is not None, 'id': cid})
+
+
+@app.route("/api/admin/cloud/consultations")
+@admin_required_api
+def admin_cloud_consultations():
+    """管理端查看云端咨询记录（JSON 文件存储，与数据库无关）"""
+    from cloud_store import get_consultations
+    return jsonify(get_consultations(100))
 
 
 

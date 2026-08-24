@@ -84,10 +84,51 @@
             </a>
         </div>
 
+        <div class="card">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+                <span>📋 用户咨询记录</span>
+                <button onclick="loadCloudConsultations()" style="padding:6px 14px;background:#667eea;color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer;">🔄 加载</button>
+            </div>
+            <div id="cloudConsults" style="font-size:13px;color:#666;padding-top:6px;">
+                点击「🔄 加载」查看用户问诊产生的记录（自动保存，无需数据库）
+            </div>
+        </div>
+
         <div class="note">
-            ☁️ <b>云端精简版说明</b>：PythonAnywhere 免费版<b>不提供数据库</b>，因此病例管理、咨询记录、样例库、向量搜索、数据导出等依赖数据库的功能在云端不可用（本地完整版提供全部功能）。<br><br>
-            💡 用户端在云端仅提供：注册 / 登录 / AI 对话问诊。
+            ☁️ <b>云端精简版说明</b>：PythonAnywhere 免费版<b>不提供数据库</b>，因此病例管理、样例库、向量搜索、数据导出等依赖数据库的功能在云端不可用（本地完整版提供全部功能）。<br><br>
+            💡 <b>用户咨询记录</b>以文件形式自动保存（无需数据库），管理端可在此查看；用户端在云端提供：注册 / 登录 / AI 对话问诊。
         </div>
     </div>
+
+    <script>
+        function loadCloudConsultations() {
+            var box = document.getElementById('cloudConsults');
+            box.innerHTML = '⏳ 加载中...';
+            fetch('/api/admin/cloud/consultations')
+                .then(function(r){ return r.json(); })
+                .then(function(list){
+                    if (!list || list.length === 0) {
+                        box.innerHTML = '<div style="color:#888;">暂无咨询记录（用户完成问诊后会自动保存到这里）</div>';
+                        return;
+                    }
+                    var html = list.map(function(r){
+                        var report = r.report || '';
+                        var reportHtml = report
+                            ? '<details style="margin-top:4px;font-size:12px;"><summary style="color:#667eea;cursor:pointer;">📄 查看完整报告</summary><pre style="white-space:pre-wrap;background:#f8f8fa;padding:10px;border-radius:6px;margin-top:6px;color:#444;max-height:260px;overflow:auto;">' + report + '</pre></details>'
+                            : '';
+                        return '<div style="padding:10px 0;border-bottom:1px solid #f0f0f0;">' +
+                            '<div><b>#' + r.id + '</b> <span style="color:#888;font-size:12px;">' + (r.patient_id || '') + ' · ' + (r.created_at || '') + '</span></div>' +
+                            '<div style="color:#444;margin-top:2px;">💬 ' + (r.symptom_text || '') + '</div>' +
+                            '<div style="color:#444;">🏷 ' + (r.department || '-') + ' · ' + (r.diagnosis || '') + '</div>' +
+                            reportHtml +
+                        '</div>';
+                    }).join('');
+                    box.innerHTML = html;
+                })
+                .catch(function(){
+                    box.innerHTML = '<div style="color:#d93025;">❌ 加载失败</div>';
+                });
+        }
+    </script>
 </body>
 </html>
