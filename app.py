@@ -397,6 +397,85 @@ def admin_api_cases():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/admin/export/ppt")
+@admin_required_api
+def admin_export_ppt():
+    """导出样例库总结 PPT（总览 + 科室分布 + 严重度 + 典型案例）"""
+    try:
+        from pptx import Presentation
+        from pptx.util import Inches, Pt
+        import pymysql
+        from config_loader import get_db_conn_kwargs
+        from datetime import datetime
+        conn = pymysql.connect(**get_db_conn_kwargs())
+        with conn.cursor(pymysql.cursors.DictCursor) as cur:
+            cur.execute("SELECT COUNT(*) AS n FROM learned_cases")
+            total = cur.fetchone()["n"] or 0
+            cur.execute("SELECT department, COUNT(*) AS cnt FROM learned_cases WHERE department IS NOT NULL AND department != '' GROUP BY department ORDER BY cnt DESC LIMIT 10")
+            depts = cur.fetchall()
+            cur.execute("SELECT severity, COUNT(*) AS cnt FROM learned_cases GROUP BY severity")
+            sevs = cur.fetchall()
+            cur.execute("SELECT id, case_text, diagnosis, department, symptoms_keywords FROM learned_cases ORDER BY id DESC LIMIT 12")
+            cases = cur.fetchall()
+        conn.close()
+
+        prs = Presentation()
+        blank = prs.slide_layouts[6]
+
+        def add_text(slide, left, top, width, height, text, size=18, bold=False, color=(0x1a, 0x1a, 0x2e)):
+            from pptx.dml.color import RGBColor
+            tb = slide.shapes.add_textbox(Inches(left), Inches(top), Inches(width), Inches(height))
+            tf = tb.text_frame
+            tf.word_wrap = True
+            lines = text.split("\n")
+            for i, ln in enumerate(lines):
+                p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
+                p.text = ln
+                p.font.size = Pt(size)
+                p.font.bold = bold
+                p.font.color.rgb = RGBColor(*color)
+            return tb
+
+        # 第1页：标题
+        s = prs.slides.add_slide(blank)
+        add_text(s, 1.0, 1.8, 8.0, 1.2, "AI 医疗问诊系统", 40, True)
+        add_text(s, 1.0, 3.2, 8.0, 1.0, "样例库总结报告", 28, True, (0x66, 0x7e, 0xea))
+        add_text(s, 1.0, 4.4, 8.0, 1.0, f"总计 {total} 条病例\n生成时间：{datetime.now():%Y-%m-%d %H:%M}", 16, False, (0x66, 0x66, 0x66))
+
+        # 第2页：数据总览
+        s = prs.slides.add_slide(blank)
+        add_text(s, 0.8, 0.5, 8.0, 0.8, "📊 数据总览", 28, True)
+        sev_map = {"green": "轻度", "yellow": "中度", "red": "重度"}
+        sev_lines = "\n".join(f"  {sev_map.get(r['severity'] or 'green', r['severity'])}病例：{r['cnt']} 条" for r in sevs)
+        add_text(s, 0.8, 1.6, 8.0, 3.0, f"  病例总数：{total} 条\n  科室数量：{len(depts)} 个\n\n  严重度分布：\n{sev_lines}", 20)
+
+        # 第3页：科室分布 TOP10
+        s = prs.slides.add_slide(blank)
+        add_text(s, 0.8, 0.5, 8.0, 0.8, "🏥 科室分布 TOP10", 28, True)
+        dept_lines = "\n".join(f"  {i+1}. {r['department']}：{r['cnt']} 条" for i, r in enumerate(depts))
+        add_text(s, 0.8, 1.6, 8.0, 5.0, dept_lines, 20)
+
+        # 第4页：典型案例
+        for idx in range(0, len(cases), 4):
+            s = prs.slides.add_slide(blank)
+            add_text(s, 0.8, 0.4, 8.0, 0.7, f"🩺 典型案例（第 {idx//4 + 1} 页）", 26, True)
+            y = 1.3
+            for c in cases[idx:idx+4]:
+                diag = (c.get("diagnosis") or "待诊断")[:40]
+                dept = c.get("department") or "未知"
+                add_text(s, 0.8, y, 8.0, 1.1, f"  #{c['id']} [{dept}] {diag}\n     关键词：{(c.get('symptoms_keywords') or '')[:60]}", 15, False, (0x33, 0x33, 0x33))
+                y += 1.3
+
+        import io as _io
+        buf = _io.BytesIO()
+        prs.save(buf)
+        buf.seek(0)
+        fname = f"样例库总结_{datetime.now():%Y%m%d_%H%M%S}.pptx"
+        return send_file(buf, as_attachment=True, download_name=fname,
+                         mimetype="application/vnd.openxmlformats-officedocument.presentationml.presentation")
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/api/admin/case/delete", methods=["POST"])
 @admin_required_api
 def admin_delete_case():
@@ -1326,6 +1405,9 @@ def admin_export_excel():
         buf.seek(0)
         return send_file(buf, as_attachment=True, download_name="medical_cases.xlsx",
                          mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

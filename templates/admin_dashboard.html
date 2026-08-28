@@ -145,8 +145,14 @@
             <a href="/admin/register" style="color:#4ade80;">📝 添加管理员</a>
             <a href="/admin/health">🩺 健康</a>
             <a href="/guide#admin" target="_blank" style="color:#a5b4fc;border:1px solid rgba(165,180,252,0.4);">📖 使用说明</a>
-            <a href="/api/admin/export/cases" style="color:#fbbf24;">📥 导出CSV</a>
-            <a href="/api/admin/export/excel" style="color:#4ade80;">📊 导出Excel</a>
+            <div style="position:relative;display:inline-block;">
+                <a href="#" onclick="toggleExportMenu(event)" style="color:#4ade80;">📥 导出数据 ▾</a>
+                <div id="exportMenu" style="display:none;position:absolute;right:0;top:26px;background:#1a1a2e;border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:6px;z-index:999;min-width:150px;">
+                    <a href="/api/admin/export/excel" style="display:block;color:#4ade80;padding:6px 10px;font-size:12px;text-decoration:none;">📊 Excel (.xlsx)</a>
+                    <a href="/api/admin/export/cases" style="display:block;color:#fbbf24;padding:6px 10px;font-size:12px;text-decoration:none;">📄 CSV</a>
+                    <a href="/api/admin/export/ppt" style="display:block;color:#f472b6;padding:6px 10px;font-size:12px;text-decoration:none;">📽 样例总结 PPT</a>
+                </div>
+            </div>
             <a href="/admin/logout" class="logout">🚪 退出</a>
         </div>
     </div>
@@ -730,6 +736,23 @@
         }).catch(function(){});
     }
     loadCharts();
+</script>
+
+<script>
+function toggleExportMenu(e) {
+    e.preventDefault();
+    var m = document.getElementById('exportMenu');
+    if (m) m.style.display = m.style.display === 'none' ? 'block' : 'none';
+}
+document.addEventListener('click', function(e2) {
+    var m = document.getElementById('exportMenu');
+    var t = e2.target;
+    if (m && m.style.display === 'block' && t) {
+        if (t.id !== 'exportMenu' && !(t.closest && t.closest('#exportMenu'))) {
+            m.style.display = 'none';
+        }
+    }
+});
 </script>
 </body>
 </html>
