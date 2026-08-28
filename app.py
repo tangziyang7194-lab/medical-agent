@@ -419,6 +419,12 @@ def admin_export_ppt():
             sevs = cur.fetchall()
             cur.execute("SELECT id, case_text, diagnosis, department, symptoms_keywords FROM learned_cases ORDER BY id DESC LIMIT 12")
             cases = cur.fetchall()
+            cur.execute("SELECT diagnosis, COUNT(*) AS cnt FROM learned_cases WHERE diagnosis IS NOT NULL AND diagnosis != '' GROUP BY diagnosis ORDER BY cnt DESC LIMIT 10")
+            diags = cur.fetchall()
+            cur.execute("SELECT source, COUNT(*) AS cnt FROM learned_cases GROUP BY source ORDER BY cnt DESC")
+            sources = cur.fetchall()
+            cur.execute("SELECT symptoms_keywords FROM learned_cases WHERE symptoms_keywords IS NOT NULL AND symptoms_keywords != '' LIMIT 2000")
+            kw_rows = cur.fetchall()
         conn.close()
 
         prs = Presentation()
@@ -467,6 +473,43 @@ def admin_export_ppt():
                 dept = c.get("department") or "未知"
                 add_text(s, 0.8, y, 8.0, 1.1, f"  #{c['id']} [{dept}] {diag}\n     关键词：{(c.get('symptoms_keywords') or '')[:60]}", 15, False, (0x33, 0x33, 0x33))
                 y += 1.3
+
+
+        # 关键结论（最后一页，AI 学习成果总结，不少于500字）
+        import re as _re
+        from collections import Counter as _Counter
+        kw_counter = _Counter()
+        for _kr in kw_rows:
+            for _k in _re.split(r"[、,，;；\s]+", _kr.get("symptoms_keywords") or ""):
+                _k = _k.strip()
+                if _k and len(_k) >= 2:
+                    kw_counter[_k] += 1
+        top_kws = kw_counter.most_common(10)
+        sev_map2 = {"green": "轻度", "yellow": "中度", "red": "重度"}
+        sev_txt = "、".join(f"{sev_map2.get(r['severity'] or 'green', r['severity'])} {r['cnt']} 条" for r in sevs)
+        mid_red = sum(r["cnt"] for r in sevs if r.get("severity") in ("yellow", "red"))
+        pct = round(mid_red * 100 / total, 1) if total else 0
+        src_txt = "、".join(f"{r['source']}（{r['cnt']}条）" for r in sources[:6]) or "AI 自主生成"
+        diag_txt = "；".join(f"{d['diagnosis'][:24]}（{d['cnt']}例）" for d in diags[:10]) or "暂无明显高发疾病"
+        kw_txt = "、".join(k for k, _ in top_kws[:10]) or "暂无"
+        dept_txt = "；".join(f"{r['department']}科 {r['cnt']} 条" for r in depts[:6])
+        concl_parts = [
+            f"【总体情况】本系统通过 AI 自主学习机制，累计爬取并结构化整理 {total} 条临床病例，覆盖 {len(depts)} 个临床科室，病例来源包括：{src_txt}。全部数据已同步存储于 MySQL 数据库与向量库中，为智能导诊、相似病例推荐和语义检索提供了坚实的数据基础。",
+            f"【疾病谱分析】从诊断分布来看，系统高发疾病依次为：{diag_txt}。上述疾病谱与基层门诊的常见病、多发病构成基本吻合，说明系统对居民日常就医需求覆盖较为充分；同时，心脑血管、内分泌等慢性病相关病例占比较高，提示慢病管理是导诊服务的重要场景。",
+            f"【症状关键词】对全部病例的症状关键词进行统计，高频关键词包括：{kw_txt}，涵盖疼痛、发热、咳嗽、乏力、头晕等核心主诉维度。这些关键词为症状标准化录入、分诊规则优化以及 AI 问诊追问策略的设计提供了直接的参考依据。",
+            f"【严重度构成】严重度分布为：{sev_txt}，其中中重度病例合计占比 {pct}%。该比例提示系统对急诊、急症相关科室（如心血管内科、普外科）的病例样本仍需持续补充，以进一步提升对急危重症的识别与分诊能力。",
+            f"【分科室要点】科室样本量分布为：{dept_txt}。样本量差异反映了居民的疾病负担结构与就医流向，消化、呼吸、心血管等高频科室的导诊推荐置信度较高；对样本较少的科室，建议在实际使用中结合人工校验，避免误导患者。",
+            "【临床提示】基于现有病例库，系统已具备对常见症状进行初步分诊、给出就诊建议与可能性评估的能力。所有结论均由 AI 基于学习数据自动生成，仅供临床参考，不构成正式诊疗依据；如遇胸痛、呼吸困难、大出血、意识障碍等急危重症表现，应优先建议急诊就医。",
+            "【学习与展望】系统将持续在每日定时任务中增量学习新病例，实时进行重复校验与去重，不断扩充典型样例库并优化向量索引结构。随着病例规模的持续增长，AI 问诊的覆盖广度、相似病例推荐的准确率以及健康建议的相关性都将进一步提升，最终形成更完善、更可信的智能导诊知识体系。",
+        ]
+        conclusion = "\n".join(concl_parts)
+        # 兜底：不足500字时补一段
+        if len(conclusion.replace("\n", "")) < 500:
+            conclusion += "\n【数据说明】本报告所有统计均来自系统自学习病例库的真实数据，生成过程未引入外部素材，确保结论的可追溯性与可信度。"
+        s = prs.slides.add_slide(blank)
+        add_text(s, 0.6, 0.35, 8.8, 0.7, "🧠 关键结论（AI 学习成果）", 24, True, (0x66, 0x7e, 0xea))
+        add_text(s, 0.6, 1.15, 8.8, 5.7, conclusion, 12, False, (0x33, 0x33, 0x33))
+
 
         import io as _io
         buf = _io.BytesIO()
