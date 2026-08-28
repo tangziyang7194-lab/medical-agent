@@ -741,6 +741,7 @@
 <script>
 function toggleExportMenu(e) {
     e.preventDefault();
+    e.stopPropagation();  // 阻止冒泡，避免被 document 点击监听立刻关闭
     var m = document.getElementById('exportMenu');
     if (m) m.style.display = m.style.display === 'none' ? 'block' : 'none';
 }
