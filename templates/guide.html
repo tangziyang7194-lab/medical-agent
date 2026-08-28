@@ -5,105 +5,153 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>使用说明 - AI导诊系统</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-            background: linear-gradient(160deg, #0f0c29, #1e1b4b, #312e81);
-            min-height: 100vh; color: #e2e8f0;
-        }
-        .container { max-width: 720px; margin: 0 auto; padding: 28px 20px 40px; }
-        .header { text-align: center; margin-bottom: 24px; }
-        .header h1 { font-size: 24px; background: linear-gradient(90deg, #818cf8, #4ade80); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .header .sub { font-size: 12px; color: #64748b; margin-top: 6px; }
-        .back { text-align: center; margin-bottom: 18px; }
-        .back a { color: #a5b4fc; text-decoration: none; font-size: 13px; margin: 0 8px; }
-        .tab-bar {
-            display: flex; background: rgba(30,27,75,0.8); border: 1px solid rgba(99,102,241,0.25);
-            border-radius: 12px; overflow: hidden; margin-bottom: 20px;
-        }
-        .tab-btn {
-            flex: 1; padding: 13px; text-align: center; cursor: pointer; font-size: 14px;
-            font-weight: 600; border: none; background: transparent; color: #94a3b8; transition: all 0.25s;
-        }
-        .tab-btn.active { background: linear-gradient(90deg, #6366f1, #8b5cf6); color: #fff; }
-        .tab-btn:hover:not(.active) { background: rgba(99,102,241,0.15); color: #e2e8f0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, "Microsoft YaHei", sans-serif; }
+        body { background: linear-gradient(135deg, #0f0c29, #1a1a3e); min-height: 100vh; color: #e2e8f0; padding: 24px 12px 60px; }
+        .wrap { max-width: 860px; margin: 0 auto; }
+        .logo { font-size: 40px; text-align: center; margin-bottom: 4px; }
+        h1 { text-align: center; font-size: 26px; background: linear-gradient(90deg, #818cf8, #e879f9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .sub { text-align: center; color: #94a3b8; font-size: 13px; margin: 6px 0 24px; }
+        .tab-bar { display: flex; gap: 8px; justify-content: center; margin-bottom: 20px; }
+        .tab-btn { padding: 10px 28px; border: 1px solid rgba(148,163,184,0.3); border-radius: 10px; background: rgba(255,255,255,0.05); color: #cbd5e1; font-size: 14px; cursor: pointer; transition: all 0.2s; }
+        .tab-btn.active { background: linear-gradient(90deg, #6366f1, #a855f7); border-color: transparent; color: #fff; font-weight: 600; }
         .tab-content { display: none; }
         .tab-content.active { display: block; animation: fadeIn 0.3s; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        .card {
-            background: rgba(30,27,75,0.8); border: 1px solid rgba(99,102,241,0.2);
-            border-radius: 14px; padding: 20px; margin-bottom: 14px;
-        }
-        .card h2 { font-size: 16px; color: #a5b4fc; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid rgba(99,102,241,0.2); }
-        .item { display: flex; gap: 12px; margin-bottom: 12px; font-size: 13px; line-height: 1.7; }
-        .item b { color: #4ade80; flex-shrink: 0; width: 92px; font-size: 13px; }
-        .item-admin b { color: #a5b4fc; }
-        .warn {
-            background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.35); color: #fca5a5;
-            border-radius: 10px; padding: 10px 14px; font-size: 12px; margin-top: 6px; line-height: 1.7;
-        }
-        .warn-cloud {
-            background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.35); color: #a5b4fc;
-            border-radius: 10px; padding: 10px 14px; font-size: 12px; margin-top: 6px; line-height: 1.7;
-        }
-        .tip {
-            background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.3); color: #86efac;
-            border-radius: 10px; padding: 10px 14px; font-size: 12px; margin-top: 6px; line-height: 1.7;
-        }
-        .footer { text-align: center; padding: 24px 0 10px; color: #475569; font-size: 12px; }
-        @media (max-width: 480px) {
-            .container { padding: 16px 12px 30px; }
-            .item { flex-direction: column; gap: 2px; }
-            .item b { width: auto; }
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+        .card { background: rgba(255,255,255,0.05); border: 1px solid rgba(148,163,184,0.15); border-radius: 14px; padding: 20px 22px; margin-bottom: 16px; }
+        .card h2 { font-size: 17px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .card h3 { font-size: 14px; color: #a5b4fc; margin: 12px 0 6px; }
+        .card p, .card li { font-size: 13px; color: #cbd5e1; line-height: 1.8; }
+        .card ul { padding-left: 20px; }
+        .card code { background: rgba(99,102,241,0.2); color: #c7d2fe; padding: 1px 6px; border-radius: 4px; font-size: 12px; }
+        .tip { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); border-radius: 10px; padding: 12px 16px; font-size: 12px; color: #fbbf24; line-height: 1.8; margin-top: 12px; }
+        .step { display: flex; gap: 10px; margin-bottom: 8px; }
+        .step-num { flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #a855f7); color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 2px; }
+        @media (max-width: 600px) { .tab-btn { padding: 8px 16px; font-size: 13px; } .card { padding: 14px; } }
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="header">
-        <h1>📖 AI导诊系统使用说明</h1>
-        <div class="sub">用户端 & 管理端 · DeepSeek V4 驱动</div>
-    </div>
-    <div class="back">
-        <a href="/">🏠 返回首页</a>
-    </div>
+<div class="wrap">
+    <div class="logo">🏥</div>
+    <h1>AI 导诊系统使用说明</h1>
+    <div class="sub">用户端 / 管理端 · DeepSeek V4 驱动 · 桌面完整版 / 云端精简版</div>
 
     <div class="tab-bar">
-        <button class="tab-btn active" id="tabBtnUser" onclick="switchTab('user')">👤 用户端说明</button>
-        <button class="tab-btn" id="tabBtnAdmin" onclick="switchTab('admin')">🔐 管理端说明</button>
+        <button class="tab-btn active" id="tabBtnUser" onclick="switchTab('user')">👤 用户端</button>
+        <button class="tab-btn" id="tabBtnAdmin" onclick="switchTab('admin')">🔐 管理端</button>
+        <button class="tab-btn" id="tabBtnFaq" onclick="switchTab('faq')">❓ 常见问题</button>
     </div>
 
-    <!-- 用户端说明 -->
+    <!-- 用户端 -->
     <div class="tab-content active" id="tab-user">
         <div class="card">
             <h2>👤 用户端功能</h2>
-            <div class="item"><b>💬 对话问诊</b><span>输入症状即可开始，AI医生会像真人一样追问细节，收集足够信息后自动生成诊断报告，可导出 Word 文档</span></div>
-            <div class="item"><b>⚡ 快捷问诊</b><span>点击聊天框上方的快捷按钮（肚子痛发烧、头痛等），一键体验常见症状问诊</span></div>
-            <div class="item"><b>🔍 语义搜索</b><span>输入关键词搜索相似病例，点击结果可查看完整病例详情</span></div>
-            <div class="item"><b>📋 病历记录</b><span>查看历史问诊记录与诊断报告（患者记录），生成的报告自动同步保存</span></div>
-            <div class="item"><b>🌿 健康建议</b><span>每日更新的健康养生知识（每天18:00自动采集）</span></div>
-            <div class="item"><b>📄 导出 Word</b><span>病历记录中每条报告均可一键导出为 Word 文档</span></div>
-            <div class="warn-cloud">☁️ PythonAnywhere 云端版说明：云端免费版<b>不涉及任何数据库/向量库操作</b>（病例、咨询记录、健康建议、语义搜索等数据功能仅本地版可用）。</div>
-            <div class="warn">⚠️ 紧急情况（胸痛、呼吸困难、大出血、意识障碍等）请立即拨打120或前往急诊！</div>
+            <h3>1. 注册 / 登录 / 找回密码</h3>
+            <ul>
+                <li>注册：首页 → 用户端 → <code>注册</code>，填写用户名 + 密码 + 确认密码</li>
+                <li>登录：用户名 + 密码，登录状态 7 天内保持（关闭浏览器不丢失）</li>
+                <li>忘记密码：登录页点「忘记密码？」→ 输入用户名 + 新密码即可重置（无需认证）</li>
+            </ul>
+            <h3>2. AI 对话问诊（核心）</h3>
+            <ul>
+                <li>点击「💬 开始问诊」进入对话，描述您的不适（如：肚子痛、发烧）</li>
+                <li>AI 会像真实医生一样进行 <b>4-5 轮完整问诊</b>：症状与持续时间 → 严重程度与性质 → 伴随症状与诱因 → 既往病史/过敏史/用药 → 补充确认</li>
+                <li>每轮只问 1-2 个问题；信息收集完整后自动生成诊断报告</li>
+                <li>支持 🎤 <b>语音输入</b>（Chrome/Edge 浏览器）：点击输入框旁的麦克风直接说症状</li>
+                <li>对话支持 🌓 <b>深色/浅色主题切换</b>（右上角按钮）</li>
+            </ul>
+            <h3>3. 查看诊断报告</h3>
+            <ul>
+                <li>问诊完成 → 点「📋 查看诊断报告」→ 自动保存并跳转病历中心</li>
+                <li>报告包含：建议科室、严重度、分诊等级、主诉、诊断结论、处理建议</li>
+            </ul>
+            <h3>4. 历史相似病例推荐</h3>
+            <ul>
+                <li>生成报告后，对话区自动展示「📊 历史相似病例推荐」（基于向量相似度，3 条）</li>
+            </ul>
+            <h3>5. 病历记录（患者记录）</h3>
+            <ul>
+                <li>与管理员端「咨询记录」同源（数据库存储），两端数据一致</li>
+                <li>每条记录支持：📄 导出 Word / 📕 导出 PDF / 📧 发送到邮箱</li>
+                <li>导出文件：Word（.docx）、PDF（.pdf），文件名含日期时间</li>
+            </ul>
+            <h3>6. 快捷问诊（选填）</h3>
+            <ul><li>首页「⚡ 快捷问诊」：填写基本信息 + 症状 → 一键生成报告</li></ul>
         </div>
     </div>
 
-    <!-- 管理端说明 -->
+    <!-- 管理端 -->
     <div class="tab-content" id="tab-admin">
         <div class="card">
             <h2>🔐 管理端功能</h2>
-            <div class="item item-admin"><b>📊 仪表盘</b><span>系统数据总览：病例 / 咨询 / 患者统计</span></div>
-            <div class="item item-admin"><b>🩺 健康管理</b><span>系统健康检查（环境配置总览）与健康养生建议采集（多源抓取，每天18:00自动）</span></div>
-            <div class="item item-admin"><b>🧠 病例管理</b><span>病例的增删改查（点「📄 详情」查看完整病例），支持导出 CSV</span></div>
-            <div class="item item-admin"><b>🔍 向量库</b><span>语义搜索（点「📄 详情」查看完整病例）、🔄 同步 MySQL 病例、🗑 清空（不影响 MySQL 数据）</span></div>
-            <div class="item item-admin"><b>⏰ 定时任务</b><span>12:00 自动学习病例（350条，自动去重）｜18:00 健康建议采集</span></div>
-            <div class="item item-admin"><b>📥 导出</b><span>一键导出病例数据（CSV）</span></div>
-            <div class="warn-cloud">☁️ PythonAnywhere 云端版说明：云端免费版<b>不涉及任何数据库/向量库操作</b>（病例管理、健康采集、向量搜索等数据功能仅本地版可用）。</div>
-            <div class="tip">💡 修改配置（.env）或代码后，需重启服务才生效；管理端和用户端共用同一数据库。</div>
+            <h3>1. 登录 / 注册 / 找回密码</h3>
+            <ul>
+                <li>管理员注册：用户名 + 密码 + 确认密码（与用户端一致，无手机验证码）</li>
+                <li>登录：用户名 + 密码；忘记密码 → 「忘记密码？」输入用户名 + 新密码重置</li>
+            </ul>
+            <h3>2. 仪表盘（数据概览 + 可视化）</h3>
+            <ul>
+                <li>统计卡片：病例总数 / 咨询记录 / 患者数 / 向量数</li>
+                <li>📈 可视化图表：科室分布 TOP10、严重度分布、近 30 天学习趋势（ECharts）</li>
+            </ul>
+            <h3>3. 病例管理</h3>
+            <ul>
+                <li>搜索：支持症状、诊断、科室，<b>也支持输入 ID 精确查询</b></li>
+                <li>每条病例可「📄 详情」查看完整内容、「🗑 删除」</li>
+                <li>表格含连续「序号」列（总数与序号对应）</li>
+            </ul>
+            <h3>4. 样例库</h3>
+            <ul>
+                <li>只展示「典型病例」：关键词 ≥3 个且描述充分的案例（全库自动筛选）</li>
+                <li>每页 100 条，最多 200 页；首页/上一页/下一页/末页翻页</li>
+                <li>支持搜索与详情查看、删除</li>
+            </ul>
+            <h3>5. 📥 导出数据（合并菜单）</h3>
+            <ul>
+                <li>点「📥 导出数据 ▾」展开菜单：<code>📊 Excel</code> / <code>📄 CSV</code> / <code>📽 样例总结 PPT</code></li>
+                <li><b>样例总结 PPT</b>：9 页——总览 / 科室 TOP10 / 典型案例与 AI 分析（全库 20 条，每条含 AI 分析）/ 关键结论（≥500 字 AI 学习成果）</li>
+            </ul>
+            <h3>6. 🧠 向量数据库</h3>
+            <ul>
+                <li>统计：当前向量条数；同步：一键将全部病例同步到向量库（有进度与完成提示）</li>
+                <li>清空：清除向量数据（不影响 MySQL）；语义搜索：输入症状找最相似病例</li>
+            </ul>
+            <h3>7. 🩺 系统健康检查</h3>
+            <ul><li>查看 MySQL / ChromaDB / DeepSeek AI / 管理员 状态与数据量</li></ul>
+            <h3>8. 🌿 健康养生建议</h3>
+            <ul>
+                <li>每天 18:00 自动采集；可手动「🚀 立即生成」「🤖 AI总结」「🔄 实时去重」</li>
+                <li>「🔗 公开页」查看用户端展示效果</li>
+            </ul>
         </div>
     </div>
 
-    <div class="footer">AI 导诊系统 · DeepSeek V4 驱动 · 仅提供健康参考，不构成医疗诊断</div>
+    <!-- 常见问题 -->
+    <div class="tab-content" id="tab-faq">
+        <div class="card">
+            <h2>❓ 常见问题</h2>
+            <h3>1. 修改代码 / 配置后不生效？</h3>
+            <ul><li>修改 <code>app.py</code>、<code>.env</code> 等文件后，<b>必须重启服务</b>才生效（改 .py/.env 都要重启）。</li></ul>
+            <h3>2. 页面显示旧内容？</h3>
+            <ul><li>浏览器缓存导致，请强刷：<code>Ctrl + Shift + R</code>（管理端页面同理）。</li></ul>
+            <h3>3. 服务启动报端口占用 / 功能时好时坏？</h3>
+            <ul><li>可能启动了多个服务进程（同时监听 5000）。只保留一个：关掉多余的，或命令行执行 <code>netstat -ano | findstr :5000</code> 查看后结束多余进程。</li></ul>
+            <h3>4. 云端（PythonAnywhere）与本地（桌面版）区别？</h3>
+            <ul>
+                <li><b>桌面完整版</b>：全部功能（数据库、向量库、图表、PPT 导出、健康建议等）</li>
+                <li><b>云端精简版</b>：用户端只保留注册 + 问诊；管理端只保留非数据库功能（健康检查、添加管理员、用户咨询记录文件存储）；无 MySQL/向量库</li>
+                <li>云端同步：Consoles → Bash → <code>cd ~/medical-agent && git pull</code> → Web → Reload</li>
+            </ul>
+            <h3>5. 📱 安卓 App？</h3>
+            <ul>
+                <li>两个 APK：<code>AI医疗问诊_安卓版.apk</code>（用户端）、<code>医疗管理端_安卓版.apk</code>（管理端）</li>
+                <li>默认连云端；⚙ 设置里可切换「桌面完整版」：填 <code>http://电脑IP:5000</code>（手机与电脑同一 Wi-Fi，电脑防火墙放行 5000 端口）</li>
+            </ul>
+            <h3>6. AI 提示无法回复？</h3>
+            <ul><li>检查 <code>.env</code> 中 <code>DEEPSEEK_API_KEY</code> 是否有效（欠费/失效会返回错误）；修改后重启服务。</li></ul>
+            <h3>7. 数据在哪？</h3>
+            <ul><li>病例/咨询存本地 MySQL；向量存本地 ChromaDB；管理员账号在 <code>admin_users.json</code>（用户端 <code>users.json</code>）。</li></ul>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -111,10 +159,15 @@ function switchTab(name) {
     document.querySelectorAll('.tab-content').forEach(function(el){ el.classList.remove('active'); });
     document.querySelectorAll('.tab-btn').forEach(function(el){ el.classList.remove('active'); });
     document.getElementById('tab-' + name).classList.add('active');
-    document.getElementById(name === 'user' ? 'tabBtnUser' : 'tabBtnAdmin').classList.add('active');
+    document.getElementById('tabBtn' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
+    if (location.hash === '#admin' || location.hash === '#faq') {
+        history.replaceState(null, '', location.pathname);
+    }
 }
-// 支持 #admin 锚点直达管理端
-if (location.hash === '#admin') { switchTab('admin'); }
+window.addEventListener('DOMContentLoaded', function(){
+    if (location.hash === '#admin') { switchTab('admin'); }
+    else if (location.hash === '#faq') { switchTab('faq'); }
+});
 </script>
 </body>
 </html>
