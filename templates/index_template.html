@@ -190,6 +190,7 @@ body.light-theme .dept-item:hover { background: #f5f3ff; }
     {% if not is_cloud %}
     <button class="btn btn-secondary" onclick="showRecords()">📋 病历记录</button>
     {% endif %}
+    <button class="btn btn-secondary" onclick="showUserGuide()" style="font-size:12px;padding:8px 14px;">📖 使用说明</button>
     <a href="/admin/login" class="btn btn-secondary" style="font-size:12px;padding:8px 14px;text-decoration:none;">🔐 管理端</a>
     {% if not is_cloud %}
     <a href="/health_tips" class="btn btn-secondary" style="font-size:12px;padding:8px 14px;text-decoration:none;">🌿 健康建议</a>
@@ -462,6 +463,24 @@ function analyzeSampleCase(id,btn){
 function closeModal() {
   document.getElementById('modalOverlay').classList.remove('show');
 }
+
+function showUserGuide() {
+  var html = '<div style="font-size:13px;line-height:1.9;color:#444;">' +
+    '<div style="background:#f5f3ff;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-weight:600;color:#667eea;">👤 用户端使用说明</div>' +
+    '<b>1. 注册 / 登录</b><br>首页点「注册」创建账号（用户名+密码）；忘记密码在登录页点「忘记密码？」用用户名+新密码重置。<br>' +
+    '<b>2. AI 对话问诊</b><br>点「💬 开始问诊」，描述不适（如：肚子痛、发烧）。AI 会像医生一样进行 4-5 轮完整问诊（症状→严重程度→伴随症状→病史用药→确认），信息齐全后自动生成诊断报告。<br>' +
+    '<b>3. 语音输入</b><br>输入框旁的 🎤 按钮支持语音输入（需 Chrome/Edge 浏览器）。<br>' +
+    '<b>4. 查看报告</b><br>问诊完成点「📋 查看诊断报告」，自动保存并跳转病历中心；对话区同时展示「历史相似病例推荐」。<br>' +
+    '<b>5. 病历记录</b><br>患者记录与管理员咨询记录同源；每条支持 📄 导出 Word / 📕 导出 PDF / 📧 发送邮箱。<br>' +
+    '<b>6. 主题切换</b><br>右上角 🌓 按钮切换深色/浅色主题。<br>' +
+    '<b>7. 快捷问诊</b><br>首页「⚡ 快捷问诊」填写信息一键生成报告。<br>' +
+    '<div style="background:#fff7ed;border-radius:8px;padding:8px 12px;margin-top:10px;font-size:12px;color:#b45309;">💡 提示：本系统由 DeepSeek V4 驱动，所有报告仅供健康参考，不构成诊疗依据；急重症请立即就医。</div>' +
+  '</div>';
+  document.getElementById('modalTitle').textContent = '📖 使用说明';
+  document.getElementById('modalBody').innerHTML = html;
+  openModal();
+}
+
 
 // ====== 页面切换 ======
 function showHome() { hideAll(); document.getElementById('pageHome').classList.remove('hidden'); renderHome(); }
