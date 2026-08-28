@@ -12,6 +12,8 @@ from functools import wraps
 
 # 确保能导入项目模块
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# 本地依赖目录（python-pptx 等，确保任何解释器都能找到）
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "py_libs"))
 
 from medical_agent import MedicalConsultationAgent
 from regions import get_provinces, get_cities, get_districts, format_location
